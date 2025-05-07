@@ -1,22 +1,100 @@
-// lib/services/n8n_service.dart
-
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../config/env.dart';
-import 'dart:async';
-
 
 class N8nService {
-  Future<bool> registerUser(String name, String email) async {
-    final url = Uri.parse(Env.registrationWebhookUrl);
+  /// Generic POST request
+  static Future<bool> _postToWebhook({
+    required String url,
+    required Map<String, dynamic> payload,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('n8n error: $e');
+      return false;
+    }
+  }
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'email': email}),
+  /// Send new user registration data
+  static Future<bool> registerUser({
+    required String name,
+    required String email,
+    required String password,
+  }) {
+    return _postToWebhook(
+      url: Env.registrationWebhookUrl,
+      payload: {
+        'name': name,
+        'email': email,
+        'password': password,
+      },
     );
+  }
 
-    return response.statusCode == 200;
+  /// Update user info
+  static Future<bool> updateUser({
+    required String userId,
+    required Map<String, dynamic> updates,
+  }) {
+    return _postToWebhook(
+      url: Env.updateWebhookUrl,
+      payload: {
+        'userId': userId,
+        'updates': updates,
+      },
+    );
+  }
+
+  /// Delete user
+  static Future<bool> deleteUser(String userId) {
+    return _postToWebhook(
+      url: Env.deleteWebhookUrl,
+      payload: {
+        'userId': userId,
+      },
+    );
+  }
+
+  /// Sync user to Chatwoot (optional standalone call)
+  static Future<bool> syncToChatwoot({
+    required String name,
+    required String email,
+    String? identifier,
+  }) {
+    return _postToWebhook(
+      url: Env.chatwootWebhookUrl,
+      payload: {
+        'name': name,
+        'email': email,
+        'identifier': identifier ?? email,
+      },
+    );
+  }
+
+  /// Fetch chat history (if webhook returns it)
+  static Future<List<Map<String, dynamic>>> getChatHistory(String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse(Env.chatHistoryWebhookUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print('n8n chat history error: $e');
+      return [];
+    }
   }
 }
-

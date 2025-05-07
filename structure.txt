@@ -1,0 +1,84 @@
+Directory of D:\VSCode\projects\CoachingAI\lib
+
+07/05/2025  02:48    <DIR>          .
+07/05/2025  13:03    <DIR>          ..
+07/05/2025  02:13    <DIR>          config
+07/05/2025  01:51    <DIR>          data
+05/05/2025  20:47    <DIR>          services
+               0 File(s)              0 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\config
+
+07/05/2025  02:13    <DIR>          .
+07/05/2025  02:48    <DIR>          ..
+07/05/2025  02:20               629 env.dart
+               1 File(s)            629 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\data
+
+07/05/2025  01:51    <DIR>          .
+07/05/2025  02:48    <DIR>          ..
+               0 File(s)              0 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\services
+
+05/05/2025  20:47    <DIR>          .
+07/05/2025  02:48    <DIR>          ..
+03/05/2025  18:28                 0 auth_service.dart
+03/05/2025  18:28                 0 chatwoot_service.dart
+07/05/2025  02:48               522 n8n_service.dart
+               3 File(s)            522 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\routes
+
+07/05/2025  02:33    <DIR>          .
+07/05/2025  13:03    <DIR>          ..
+07/05/2025  02:53               382 app_routes.dart
+               1 File(s)            382 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\screens
+
+05/05/2025  20:47    <DIR>          .
+07/05/2025  13:03    <DIR>          ..
+05/05/2025  20:47    <DIR>          auth
+07/05/2025  02:34    <DIR>          chat
+05/05/2025  16:04             1,375 home_screen.dart
+05/05/2025  15:25               860 profile_screen.dart
+               2 File(s)          2,235 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\screens\auth
+
+05/05/2025  20:47    <DIR>          .
+05/05/2025  20:47    <DIR>          ..
+05/05/2025  15:25               430 login_screen.dart
+07/05/2025  02:53             2,094 register_screen.dart
+05/05/2025  15:25             1,592 reset_password_screen.dart
+               3 File(s)          4,116 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\screens\chat
+
+07/05/2025  02:34    <DIR>          .
+05/05/2025  20:47    <DIR>          ..
+07/05/2025  02:54               367 chatwoot_widget_screen.dart
+07/05/2025  02:54               353 chat_history_screen.dart
+07/05/2025  02:54               326 chat_screen.dart
+               3 File(s)          1,046 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\utils
+
+05/05/2025  20:47    <DIR>          .
+07/05/2025  13:03    <DIR>          ..
+03/05/2025  18:30                 0 constants.dart
+03/05/2025  18:30                 0 validators.dart
+               2 File(s)              0 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\widgets
+
+05/05/2025  20:47    <DIR>          .
+07/05/2025  13:03    <DIR>          ..
+03/05/2025  18:29                 0 custom_button.dart
+               1 File(s)              0 bytes
+
+     Total Files Listed:
+             112 File(s)         77,520 bytes
+             223 Dir(s)  475,547,660,288 bytes free
