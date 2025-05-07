@@ -3,6 +3,8 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/env.dart';
+import 'dart:async';
+
 
 class N8nService {
   Future<bool> registerUser(String name, String email) async {
@@ -17,3 +19,4 @@ class N8nService {
     return response.statusCode == 200;
   }
 }
+

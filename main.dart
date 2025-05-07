@@ -4,8 +4,10 @@ import 'screens/home_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/chat/chat_history_screen.dart';
-import 'screens/chat/chat_screen.dart';
-import 'screens/chat/chatwoot_widget_screen.dart'; // Import ChatwootWidgetScreen
+import 'screens/chat/chat_screen.dart'; // Correct relative import
+import 'screens/chat/chatwoot_widget_screen.dart';
+
+// Import ChatwootWidgetScreen
 
 void main() {
   runApp(MyApp());
