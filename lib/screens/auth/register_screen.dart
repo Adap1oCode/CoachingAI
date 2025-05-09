@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../services/n8n_service.dart';
 import '../../services/auth_service.dart';
-import '../../routes/app_routes.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -12,75 +12,168 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _authService = AuthService();
 
-  bool _loading = false;
+  String name = '';
+  String email = '';
+  String password = '';
+  bool loading = false;
+  String? error;
 
-  Future<void> _register() async {
+  void _register() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _loading = true);
+    setState(() {
+      loading = true;
+      error = null;
+    });
 
-  final success = await N8nService.registerUser(
-    name: _nameController.text.trim(),
-    email: _emailController.text.trim(),
-    password: _passwordController.text.trim(),
-  );
-
-    setState(() => _loading = false);
-
-    if (success) {
-      await AuthService.setLoggedIn(true);
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration failed. Try again.')),
+    try {
+      await _authService.signUp(
+        email: email.trim(),
+        password: password.trim(),
+        name: name.trim(),
       );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Account created! Check your email to verify."),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    } catch (e) {
+      setState(() => error = e.toString());
+    } finally {
+      setState(() => loading = false);
     }
   }
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-              ),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (value) =>
-                    value != null && value.contains('@') ? null : 'Enter valid email',
-              ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (value) =>
-                    value != null && value.length >= 6 ? null : 'Min 6 characters',
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _loading ? null : _register,
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Create Account'),
-              ),
-            ],
-          ),
-        ),
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(
+        'Register',
+        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
       ),
-    );
-  }
+      centerTitle: true,
+    ),
+    body: SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 20),
+          Text(
+            'Create your account',
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Enter your details to sign up',
+            style: GoogleFonts.poppins(color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Full Name',
+                        prefixIcon: const Icon(Icons.person),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                      ),
+                      onChanged: (val) => name = val,
+                      validator: (val) =>
+                          val == null || val.isEmpty ? 'Enter your name' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: const Icon(Icons.email),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      onChanged: (val) => email = val,
+                      validator: (val) => val != null && val.contains('@')
+                          ? null
+                          : 'Enter a valid email',
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: const Icon(Icons.lock),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                      ),
+                      obscureText: true,
+                      onChanged: (val) => password = val,
+                      validator: (val) => val != null && val.length >= 6
+                          ? null
+                          : 'Min 6 characters',
+                    ),
+                    const SizedBox(height: 24),
+                    if (loading) const CircularProgressIndicator(),
+                    if (error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(error!,
+                          style: const TextStyle(color: Colors.red)),
+                    ],
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: loading ? null : _register,
+                      child: const Text('Create Account'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () =>
+                          Navigator.pushReplacementNamed(context, '/login'),
+                      child: const Text("Already have an account? Log in"),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 }

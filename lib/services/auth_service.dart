@@ -1,23 +1,31 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-  static const _userLoggedInKey = 'user_logged_in';
+  final SupabaseClient _client = Supabase.instance.client;
 
-  /// Simulate login status check from SharedPreferences
-  static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_userLoggedInKey) ?? false;
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    return await _client.auth.signUp(
+      email: email,
+      password: password,
+      data: {'full_name': name},
+    );
   }
 
-  /// Call this after successful login/registration
-  static Future<void> setLoggedIn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_userLoggedInKey, value);
+  Future<AuthResponse> login({
+    required String email,
+    required String password,
+  }) async {
+    return await _client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
   }
 
-  /// Clear session
-  static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userLoggedInKey);
+  Future<void> sendPasswordReset(String email) async {
+    await _client.auth.resetPasswordForEmail(email);
   }
 }

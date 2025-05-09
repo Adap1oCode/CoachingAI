@@ -1,13 +1,14 @@
+
 import 'package:flutter/material.dart';
 
 class ChatHistoryScreen extends StatelessWidget {
-  const ChatHistoryScreen({super.key});
+  const ChatHistoryScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Chat History')),
-      body: Center(child: Text('Your chat history will appear here.')),
+      appBar: AppBar(title: const Text("Chat History")),
+      body: const Center(child: Text("List of past conversations.")),
     );
   }
 }

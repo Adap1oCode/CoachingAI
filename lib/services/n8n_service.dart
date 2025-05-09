@@ -22,20 +22,34 @@ class N8nService {
   }
 
   /// Send new user registration data
-  static Future<bool> registerUser({
-    required String name,
-    required String email,
-    required String password,
-  }) {
-    return _postToWebhook(
-      url: Env.registrationWebhookUrl,
-      payload: {
+  static Future<Map<String, dynamic>?> registerUser({
+  required String name,
+  required String email,
+  required String password,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse(Env.registrationWebhookUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
         'name': name,
         'email': email,
         'password': password,
-      },
+      }),
     );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['success'] == true ? data : null;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    print('registerUser error: $e');
+    return null;
   }
+}
+
 
   /// Update user info
   static Future<bool> updateUser({

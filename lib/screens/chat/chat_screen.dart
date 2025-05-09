@@ -1,13 +1,14 @@
+
 import 'package:flutter/material.dart';
 
 class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+  const ChatScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Chat Screen')),
-      body: Center(child: Text('This is the chat screen')),
+      appBar: AppBar(title: const Text("Chat")),
+      body: const Center(child: Text("Authenticated Chat UI goes here.")),
     );
   }
 }
