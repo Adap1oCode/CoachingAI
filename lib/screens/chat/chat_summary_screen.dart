@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class ChatSummaryScreen extends StatelessWidget {
-  const ChatSummaryScreen({Key? key}) : super(key: key);
+  const ChatSummaryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

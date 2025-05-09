@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class GuestChatScreen extends StatelessWidget {
-  const GuestChatScreen({Key? key}) : super(key: key);
+  const GuestChatScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class TwoFactorScreen extends StatefulWidget {
-  const TwoFactorScreen({Key? key}) : super(key: key);
+  const TwoFactorScreen({super.key});
 
   @override
   State<TwoFactorScreen> createState() => _TwoFactorScreenState();
