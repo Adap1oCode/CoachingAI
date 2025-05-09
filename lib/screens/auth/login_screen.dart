@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
+import 'package:coaching_ai_new/constants/strings.dart';
+import 'package:coaching_ai_new/constants/route_names.dart';
+import 'package:coaching_ai_new/core/widget/logo_widget.dart';
+import 'package:coaching_ai_new/core/utils/form_decorators.dart';
+import 'package:coaching_ai_new/core/utils/button_styles.dart';
+import 'package:coaching_ai_new/core/utils/validators.dart';
+import 'package:coaching_ai_new/core/widget/back_button_widget.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String password = '';
   bool loading = false;
   String? error;
+  bool _obscurePassword = true;
 
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -30,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.login(email: email.trim(), password: password.trim());
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/chat');
+        Navigator.pushReplacementNamed(context, RouteNames.chat);
       }
     } catch (e) {
       setState(() => error = e.toString());
@@ -42,99 +50,94 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Login', style: GoogleFonts.poppins()),
-        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: const BackButtonWidget(),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 20),
-            Text(
-              'Welcome back!',
-              style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Log in to continue',
-              style: GoogleFonts.poppins(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: const Icon(Icons.email),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        onChanged: (val) => email = val,
-                        validator: (val) =>
-                            val != null && val.contains('@') ? null : 'Enter a valid email',
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                        ),
-                        obscureText: true,
-                        onChanged: (val) => password = val,
-                        validator: (val) =>
-                            val != null && val.length >= 6 ? null : 'Min 6 characters',
-                      ),
-                      const SizedBox(height: 16),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
-                          child: const Text('Forgot Password?'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (loading) const CircularProgressIndicator(),
-                      if (error != null)
-                        Text(error!, style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: loading ? null : _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Log In'),
-                      ),
-                    ],
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                children: [
+                  const LogoWidget(height: 100),
+                  SizedBox(height: constraints.maxHeight * 0.06),
+                  Text(
+                    AppStrings.signInTitle,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall!
+                        .copyWith(fontWeight: FontWeight.bold),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Log in to continue',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium!
+                        .copyWith(color: Colors.grey[600]),
+                  ),
+                  SizedBox(height: constraints.maxHeight * 0.05),
+                  Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          decoration: inputDecoration(AppStrings.email),
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          onChanged: (val) => email = val,
+                          validator: validateEmail,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          decoration: inputDecoration(AppStrings.password).copyWith(
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                          ),
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _login(),
+                          onChanged: (val) => password = val,
+                          validator: validatePassword,
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, RouteNames.forgotPassword),
+                          child: const Text(AppStrings.forgotPasswordCTA),
+                        ),
+                        const SizedBox(height: 8),
+                        if (loading) const CircularProgressIndicator(),
+                        if (error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(error!, style: const TextStyle(color: Colors.red)),
+                          ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: loading ? null : _login,
+                          style: elevatedButtonStyle(),
+                          child: const Text(AppStrings.signIn),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
