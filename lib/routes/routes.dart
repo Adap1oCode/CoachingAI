@@ -7,7 +7,7 @@ import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/two_factor_screen.dart';
 import '../screens/auth/registration_success_screen.dart'; // ✅ NEW
-import '../screens/guest-chat/guest_chat_screen.dart';
+import '../screens/guest_chat/guest_chat_screen.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/chat/chat_history_screen.dart';
 import '../screens/chat/chat_summary_screen.dart';

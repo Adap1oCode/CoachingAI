@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:coaching_ai_new/core/utils/button_styles.dart';
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key});

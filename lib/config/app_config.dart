@@ -5,6 +5,8 @@ class Env {
   static const String chatHistoryWebhookUrl    = '$n8nBaseUrl/chat-history';
   static const String updateWebhookUrl         = '$n8nBaseUrl/update-user';
   static const String deleteWebhookUrl         = '$n8nBaseUrl/delete-user';
+  static const String getmessageWebhookUrl     = '$n8nBaseUrl/get_messages';
+  static const String sendmessageWebhookUrl    = '$n8nBaseUrl/send_message';
 
   // ✅ Chatwoot WebWidget config
   static const String chatwootBaseUrl = 'https://cw.flowmaticai.cloud';

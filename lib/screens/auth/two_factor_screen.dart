@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:coaching_ai_new/constants/strings.dart';
 import 'package:coaching_ai_new/constants/route_names.dart';
 import 'package:coaching_ai_new/core/utils/button_styles.dart';
 import 'package:coaching_ai_new/core/utils/form_decorators.dart';
