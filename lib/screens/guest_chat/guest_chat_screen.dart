@@ -1,58 +1,238 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../../config/app_config.dart'; // ✅ CORRECT
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import '../../services/chat_service.dart';
 
+class GuestChatScreen extends StatefulWidget {
+  const GuestChatScreen({super.key});
 
-class ChatService {
-  static const String sendMessageUrl = Env.sendmessageWebhookUrl;
-  static const String getMessagesUrl = Env.getmessageWebhookUrl;
+  @override
+  State<GuestChatScreen> createState() => _GuestChatScreenState();
+}
 
+class _GuestChatScreenState extends State<GuestChatScreen> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
-  /// Sends a message to the backend via n8n.
-  /// If [conversationId] is null, assumes it's the first message.
-  static Future<Map<String, dynamic>?> sendMessage(
-      String? conversationId, String content) async {
-    try {
-      final isNewConversation = conversationId == null;
+  late final String _guestUserId;
+  int? _conversationId;
+  String? _contactId;
+  String? _accountId;
 
-      final response = await http.post(
-        Uri.parse(sendMessageUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'conversation_id': conversationId,
-          'message': content,
-          'event': isNewConversation ? 'conversation_created' : 'message_created',
-        }),
-      );
+  List<Map<String, dynamic>> _messages = [];
+  List<Map<String, dynamic>> _conversations = [];
+  bool _isSending = false;
+  bool _hasStartedBefore = false;
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        print('❌ Failed to send message: ${response.statusCode} ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      print('❌ Error sending message: $e');
-      return null;
+  @override
+  void initState() {
+    super.initState();
+    _guestUserId = "guest_${const Uuid().v4()}";
+  }
+
+  Future<void> _loadConversations() async {
+    if (_contactId == null) return;
+
+    final list = await ChatService.getConversations(_contactId!);
+
+    final patchedList = list.map((conv) => {
+      ...conv,
+      'last_message': 'Tap to open this conversation',
+    }).toList();
+
+    setState(() => _conversations = patchedList);
+  }
+
+  Future<void> _loadConversationMessages(int conversationId) async {
+    final result = await ChatService.getMessages(conversationId.toString());
+    if (result != null && result['messages'] is List) {
+      final rawMessages = result['messages'] as List<dynamic>;
+
+      final processed = rawMessages
+          .map((msg) => {
+                'id': msg['id'],
+                'content': msg['content'],
+                'is_from_guest': msg['is_from_guest'],
+              })
+          .cast<Map<String, dynamic>>()
+          .toList();
+
+      processed.sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
+
+      setState(() {
+        _conversationId = conversationId;
+        _messages = processed;
+      });
+
+      _scrollToBottom();
     }
   }
 
-  /// Fetches all messages for a given conversation.
-  static Future<List<Map<String, dynamic>>> getMessages(String conversationId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$getMessagesUrl?conversation_id=$conversationId'),
-      );
+  Future<void> _sendMessage() async {
+    final content = _messageController.text.trim();
+    if (content.isEmpty || _isSending) return;
 
-      if (response.statusCode == 200) {
-        List raw = jsonDecode(response.body);
-        return raw.cast<Map<String, dynamic>>();
-      } else {
-        throw Exception('Failed to load messages');
+    setState(() => _isSending = true);
+
+    final eventType = _conversationId == null
+        ? (_hasStartedBefore ? 'new_conversation' : 'first_conversation')
+        : 'new_message';
+
+    final response = await ChatService.sendMessage(
+      _conversationId?.toString(),
+      content,
+      _guestUserId,
+      eventType,
+      contactId: _contactId,
+      accountId: _accountId,
+    );
+
+    if (response != null && response['event'] == 'message_created') {
+      _messageController.clear();
+
+      if (response['contact_id'] != null) {
+        setState(() {
+          _contactId = response['contact_id'].toString();
+        });
       }
-    } catch (e) {
-      print('❌ Error fetching messages: $e');
-      return [];
+
+      if (response['account_id'] != null) {
+        setState(() {
+          _accountId = response['account_id'].toString();
+        });
+      }
+
+      if (response['conversation_id'] != null) {
+        setState(() {
+          _conversationId = int.tryParse(response['conversation_id'].toString());
+          _hasStartedBefore = true;
+        });
+      }
+
+      await _loadConversations();
+
+      if (_conversationId != null) {
+        await _loadConversationMessages(_conversationId!);
+      }
     }
+
+    setState(() => _isSending = false);
+  }
+
+  void _startNewConversation() {
+    setState(() {
+      _conversationId = null;
+      _messages = [];
+    });
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
+    }
+  }
+
+  Widget _buildMessageBubble(Map<String, dynamic> msg) {
+    final isGuest = msg['is_from_guest'] == true;
+    return Container(
+      alignment: isGuest ? Alignment.centerRight : Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isGuest ? Colors.blueAccent : Colors.grey[300],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Text(
+          msg['content'] ?? '',
+          style: TextStyle(color: isGuest ? Colors.white : Colors.black87),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Guest Chat"),
+        actions: [
+          TextButton.icon(
+            onPressed: _startNewConversation,
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: const Text("New Conversation", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+      body: Row(
+        children: [
+          Container(
+            width: 250,
+            color: Colors.grey[200],
+            child: ListView.builder(
+              itemCount: _conversations.length,
+              itemBuilder: (context, index) {
+                final convo = _conversations[index];
+                return ListTile(
+                  title: Text("Conversation #${convo['conversation_id']}"),
+                  subtitle: Text(convo['last_message'] ?? ''),
+                  onTap: () => _loadConversationMessages(convo['conversation_id']),
+                  selected: convo['conversation_id'] == _conversationId,
+                );
+              },
+            ),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      return _buildMessageBubble(_messages[index]);
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _sendMessage(),
+                          decoration: const InputDecoration(
+                            hintText: 'Type a message...',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: _sendMessage,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
