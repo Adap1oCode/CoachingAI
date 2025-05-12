@@ -1,9 +1,11 @@
+// =========================
+// auth_service.dart
+// =========================
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'package:flutter/foundation.dart';
-
 
 class AuthService {
   final _client = Supabase.instance.client;

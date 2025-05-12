@@ -1,11 +1,15 @@
-/// Enum for different types of chat events
+// =========================
+// chat_service.dart
+// =========================
+
 enum ChatEventType {
   firstConversation,
   newConversation,
   newMessage,
+  initialAccountChat, // ✅ Renamed from initialUserMessage
 }
 
-extension ChatEventTypeExt on ChatEventType {
+extension ChatEventTypeExtension on ChatEventType {
   String get name {
     switch (this) {
       case ChatEventType.firstConversation:
@@ -14,6 +18,8 @@ extension ChatEventTypeExt on ChatEventType {
         return 'new_conversation';
       case ChatEventType.newMessage:
         return 'new_message';
+      case ChatEventType.initialAccountChat:
+        return 'initial_account_chat'; // ✅ Updated string
     }
   }
 }

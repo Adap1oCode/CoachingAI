@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../constants/route_names.dart';
 import '../../services/chat/chat_service.dart';
 import '../../services/chat/user_chat_service.dart';
+
 
 class ChatScreen extends StatefulWidget {
   final String userId;
@@ -106,12 +109,14 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isSending = true);
 
     final eventType = _conversationId == null
-        ? ChatEventType.initialUserMessage
-        : ChatEventType.newMessage;
+    ? (_conversations.isEmpty
+        ? ChatEventType.initialAccountChat
+        : ChatEventType.newConversation)
+    : ChatEventType.newMessage;
 
     final response = await _chatService.sendMessage(
       content: content,
-      eventType: eventType.name,
+      eventType: eventType,
       conversationId: _conversationId?.toString(),
     );
 
@@ -188,24 +193,9 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () {},
-            ),
-            ListTile(
               leading: const Icon(Icons.history),
               title: const Text('Chat History'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {},
+              onTap: () {}, // Placeholder
             ),
           ],
         ),
@@ -218,13 +208,39 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text(
-                initials,
-                style: const TextStyle(
-                  color: Color(0xFF00BF6D),
-                  fontWeight: FontWeight.bold,
+            child: PopupMenuButton<String>(
+              onSelected: (value) async {
+                if (value == 'profile') {
+                  Navigator.pushNamed(context, RouteNames.profile);
+                } else if (value == 'logout') {
+                  await Supabase.instance.client.auth.signOut();
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      RouteNames.login,
+                      (_) => false,
+                    );
+                  }
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'profile',
+                  child: Text('Profile'),
+                ),
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Text('Logout'),
+                ),
+              ],
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Color(0xFF00BF6D),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
