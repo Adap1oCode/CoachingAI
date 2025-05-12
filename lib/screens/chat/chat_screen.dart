@@ -35,12 +35,12 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _conversations = [];
   bool _isSending = false;
-  bool _hasStartedBefore = false;
   bool _hasStartedChat = false;
 
   @override
   void initState() {
     super.initState();
+
     _chatService = UserChatService(
       userId: widget.userId,
       contactId: widget.contactId,
@@ -58,6 +58,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadConversations() async {
+    if (widget.contactId == null) {
+      debugPrint('⚠️ contactId is null — cannot load conversations');
+      return;
+    }
+
     final list = await _chatService.getConversations();
 
     final patchedList = list.map((conv) => {
@@ -77,7 +82,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .map((msg) => {
                 'id': msg['id'],
                 'content': msg['content'],
-                'is_from_guest': msg['is_from_guest'], // Optional
+                'is_from_guest': msg['is_from_guest'],
               })
           .cast<Map<String, dynamic>>()
           .toList();
@@ -101,14 +106,12 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isSending = true);
 
     final eventType = _conversationId == null
-        ? (_hasStartedBefore
-            ? ChatEventType.newConversation
-            : ChatEventType.firstConversation)
+        ? ChatEventType.initialUserMessage
         : ChatEventType.newMessage;
 
     final response = await _chatService.sendMessage(
       content: content,
-      eventType: eventType,
+      eventType: eventType.name,
       conversationId: _conversationId?.toString(),
     );
 
@@ -118,7 +121,6 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _conversationId =
             int.tryParse(response['conversation_id']?.toString() ?? '');
-        _hasStartedBefore = true;
       });
 
       await _loadConversations();
@@ -188,22 +190,22 @@ class _ChatScreenState extends State<ChatScreen> {
             ListTile(
               leading: const Icon(Icons.person),
               title: const Text('Profile'),
-              onTap: () {}, // TODO
+              onTap: () {},
             ),
             ListTile(
               leading: const Icon(Icons.history),
               title: const Text('Chat History'),
-              onTap: () {}, // TODO
+              onTap: () {},
             ),
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Settings'),
-              onTap: () {}, // TODO
+              onTap: () {},
             ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Logout'),
-              onTap: () {}, // TODO
+              onTap: () {},
             ),
           ],
         ),

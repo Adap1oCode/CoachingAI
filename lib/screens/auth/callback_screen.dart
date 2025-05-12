@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'chat_api.dart';
+import 'chat_service.dart'; // needed for ChatEventType
+
 
 
 class CallbackScreen extends StatefulWidget {
