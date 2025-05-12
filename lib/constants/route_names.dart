@@ -1,4 +1,5 @@
 class RouteNames {
+  static const splash = '/';
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
@@ -8,8 +9,7 @@ class RouteNames {
   static const chatSummary = '/chat-summary';
   static const profile = '/profile';
   static const settings = '/settings';
-  static const splash = '/';
   static const twoFA = '/2fa';
   static const registrationSuccess = '/registration-success';
-
+  static const callback = '/callback';
 }

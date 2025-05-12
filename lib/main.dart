@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
-import 'routes/routes.dart'; // make sure this import matches your folder structure
+// import 'routes/routes.dart'; // make sure this exposes generateRoute
+import 'package:coaching_ai_new/constants/route_names.dart';
+import 'routes/routes.dart' show generateRoute;
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +26,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Coaching AI',
       debugShowCheckedModeBanner: false,
-      initialRoute: '/', // change to '/' when SplashScreen is ready
-      routes: appRoutes,
+      initialRoute: RouteNames.splash, // or '/' if splash is route-mapped
+      onGenerateRoute: generateRoute,
     );
   }
 }

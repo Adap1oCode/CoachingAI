@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import '../../services/chat_service.dart';
+import '../../services/chat/chat_service.dart';
+import '../../services/chat/guest_chat_service.dart';
 
 class GuestChatScreen extends StatefulWidget {
   const GuestChatScreen({super.key});
@@ -14,11 +15,8 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  late final String _guestUserId;
+  late final GuestChatService _chatService;
   int? _conversationId;
-  String? _contactId;
-  String? _accountId;
-  String? _sourceId; // ✅ NEW: source_id tracking
 
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _conversations = [];
@@ -29,13 +27,11 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
   @override
   void initState() {
     super.initState();
-    _guestUserId = "guest_${const Uuid().v4()}";
+    _chatService = GuestChatService();
   }
 
   Future<void> _loadConversations() async {
-    if (_contactId == null) return;
-
-    final list = await ChatService.getConversations(_contactId!);
+    final list = await _chatService.getConversations();
 
     final patchedList = list.map((conv) => {
           ...conv,
@@ -46,7 +42,7 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
   }
 
   Future<void> _loadConversationMessages(int conversationId) async {
-    final result = await ChatService.getMessages(conversationId.toString());
+    final result = await _chatService.getMessages(conversationId.toString());
     if (result != null && result['messages'] is List) {
       final rawMessages = result['messages'] as List<dynamic>;
 
@@ -78,50 +74,27 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
     setState(() => _isSending = true);
 
     final eventType = _conversationId == null
-        ? (_hasStartedBefore ? 'new_conversation' : 'first_conversation')
-        : 'new_message';
+        ? (_hasStartedBefore
+            ? ChatEventType.newConversation
+            : ChatEventType.firstConversation)
+        : ChatEventType.newMessage;
 
-    final response = await ChatService.sendMessage(
-      _conversationId?.toString(),
-      content,
-      _guestUserId,
-      eventType,
-      contactId: _contactId,
-      accountId: _accountId,
-      sourceId: _sourceId, // ✅ Send source_id to backend
+    final response = await _chatService.sendMessage(
+      content: content,
+      eventType: eventType,
+      conversationId: _conversationId?.toString(),
     );
 
     if (response != null && response['event'] == 'message_created') {
       _messageController.clear();
 
-      if (response['contact_id'] != null) {
-        setState(() {
-          _contactId = response['contact_id'].toString();
-        });
-      }
-
-      if (response['account_id'] != null) {
-        setState(() {
-          _accountId = response['account_id'].toString();
-        });
-      }
-
-      if (response['source_id'] != null) {
-        setState(() {
-          _sourceId = response['source_id'].toString(); // ✅ Store source_id
-        });
-      }
-
-      if (response['conversation_id'] != null) {
-        setState(() {
-          _conversationId =
-              int.tryParse(response['conversation_id'].toString());
-          _hasStartedBefore = true;
-        });
-      }
+      setState(() {
+        _conversationId =
+            int.tryParse(response['conversation_id']?.toString() ?? '');
+        _hasStartedBefore = true;
+      });
 
       await _loadConversations();
-
       if (_conversationId != null) {
         await _loadConversationMessages(_conversationId!);
       }

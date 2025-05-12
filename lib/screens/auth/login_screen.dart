@@ -8,7 +8,6 @@ import 'package:coaching_ai_new/core/utils/button_styles.dart';
 import 'package:coaching_ai_new/core/utils/validators.dart';
 import 'package:coaching_ai_new/core/widget/back_button_widget.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -35,10 +34,29 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.login(email: email.trim(), password: password.trim());
+      // 1. Log in to Supabase
+      final user = await _authService.login(
+        email: email.trim(),
+        password: password.trim(),
+      );
 
+      // 2. Get Chatwoot Identity info from webhook
+      final chatIdentity = await _authService.fetchChatIdentity(email.trim());
+
+      // 3. Navigate to ChatScreen with all chat info
       if (mounted) {
-        Navigator.pushReplacementNamed(context, RouteNames.chat);
+        Navigator.pushReplacementNamed(
+          context,
+          RouteNames.chat,
+          arguments: {
+            'userId': user.id,
+            'userName': user.userMetadata?['full_name'] ?? email.trim(),
+            'contactId': chatIdentity['contact_id'],
+            'accountId': chatIdentity['account_id'],
+            'sourceId': chatIdentity['source_id'],
+            'hmac': chatIdentity['hmac'],
+          },
+        );
       }
     } catch (e) {
       setState(() => error = e.toString());
@@ -95,10 +113,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
-                          decoration: inputDecoration(AppStrings.password).copyWith(
+                          decoration:
+                              inputDecoration(AppStrings.password).copyWith(
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -115,7 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         TextButton(
-                          onPressed: () => Navigator.pushNamed(context, RouteNames.forgotPassword),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, RouteNames.forgotPassword),
                           child: const Text(AppStrings.forgotPasswordCTA),
                         ),
                         const SizedBox(height: 8),
@@ -123,7 +145,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (error != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
-                            child: Text(error!, style: const TextStyle(color: Colors.red)),
+                            child:
+                                Text(error!, style: const TextStyle(color: Colors.red)),
                           ),
                         const SizedBox(height: 16),
                         ElevatedButton(

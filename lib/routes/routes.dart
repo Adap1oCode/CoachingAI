@@ -6,7 +6,8 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/two_factor_screen.dart';
-import '../screens/auth/registration_success_screen.dart'; // ✅ NEW
+import '../screens/auth/registration_success_screen.dart';
+import '../screens/auth/callback_screen.dart'; // ✅ NEW
 import '../screens/guest_chat/guest_chat_screen.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/chat/chat_history_screen.dart';
@@ -14,17 +15,49 @@ import '../screens/chat/chat_summary_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/settings/settings_screen.dart';
 
-final Map<String, WidgetBuilder> appRoutes = {
-  RouteNames.splash: (context) => const SplashScreen(),
-  RouteNames.login: (context) => const LoginScreen(),
-  RouteNames.register: (context) => const RegisterScreen(),
-  RouteNames.forgotPassword: (context) => const ForgotPasswordScreen(),
-  RouteNames.twoFA: (context) => const TwoFactorScreen(),
-  RouteNames.registrationSuccess: (context) => const RegistrationSuccessScreen(), // ✅ NEW
-  RouteNames.guestChat: (context) => const GuestChatScreen(),
-  RouteNames.chat: (context) => const ChatScreen(),
-  RouteNames.chatHistory: (context) => const ChatHistoryScreen(),
-  RouteNames.chatSummary: (context) => const ChatSummaryScreen(),
-  RouteNames.profile: (context) => const ProfileScreen(),
-  RouteNames.settings: (context) => const SettingsScreen(),
-};
+Route<dynamic> generateRoute(RouteSettings settings) {
+  switch (settings.name) {
+    case RouteNames.splash:
+      return MaterialPageRoute(builder: (_) => const SplashScreen());
+    case RouteNames.login:
+      return MaterialPageRoute(builder: (_) => const LoginScreen());
+    case RouteNames.register:
+      return MaterialPageRoute(builder: (_) => const RegisterScreen());
+    case RouteNames.forgotPassword:
+      return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
+    case RouteNames.twoFA:
+      return MaterialPageRoute(builder: (_) => const TwoFactorScreen());
+    case RouteNames.registrationSuccess:
+      return MaterialPageRoute(builder: (_) => const RegistrationSuccessScreen());
+    case RouteNames.callback: // ✅ Ensure callback route is defined
+      return MaterialPageRoute(builder: (_) => const CallbackScreen());
+    case RouteNames.guestChat:
+      return MaterialPageRoute(builder: (_) => const GuestChatScreen());
+    case RouteNames.chat:
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          userId: args['userId'],
+          userName: args['userName'],
+          contactId: args['contactId'],
+          accountId: args['accountId'],
+          sourceId: args['sourceId'],
+          hmac: args['hmac'],
+        ),
+      );
+    case RouteNames.chatHistory:
+      return MaterialPageRoute(builder: (_) => const ChatHistoryScreen());
+    case RouteNames.chatSummary:
+      return MaterialPageRoute(builder: (_) => const ChatSummaryScreen());
+    case RouteNames.profile:
+      return MaterialPageRoute(builder: (_) => const ProfileScreen());
+    case RouteNames.settings:
+      return MaterialPageRoute(builder: (_) => const SettingsScreen());
+    default:
+      return MaterialPageRoute(
+        builder: (_) => const Scaffold(
+          body: Center(child: Text('Route not found')),
+        ),
+      );
+  }
+}
