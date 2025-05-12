@@ -1,0 +1,170 @@
+ Volume in drive D is New Volume
+ Volume Serial Number is 4AFD-12CE
+
+ Directory of D:\VSCode\projects\CoachingAI\lib
+
+12/05/2025  09:21    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19    <DIR>          config
+12/05/2025  09:19    <DIR>          constants
+12/05/2025  09:19    <DIR>          core
+12/05/2025  09:19               873 main.dart
+12/05/2025  09:19    <DIR>          models
+12/05/2025  09:19    <DIR>          routes
+12/05/2025  09:19    <DIR>          screens
+12/05/2025  09:19    <DIR>          services
+12/05/2025  09:21                 0 structure.txt
+               2 File(s)            873 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\config
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:21    <DIR>          ..
+12/05/2025  09:19             1,372 app_config.dart
+               1 File(s)          1,372 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\constants
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:21    <DIR>          ..
+12/05/2025  09:19               562 route_names.dart
+12/05/2025  09:19             1,984 strings.dart
+               2 File(s)          2,546 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\core
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:21    <DIR>          ..
+12/05/2025  09:19    <DIR>          theme
+12/05/2025  09:19    <DIR>          utils
+12/05/2025  09:19    <DIR>          widget
+               0 File(s)              0 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\core\theme
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19                 0 app_theme.dart
+               1 File(s)              0 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\core\utils
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19               595 button_styles.dart
+12/05/2025  09:19               434 form_decorators.dart
+12/05/2025  09:19               514 validators.dart
+               3 File(s)          1,543 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\core\widget
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19               403 back_button_widget.dart
+12/05/2025  09:19                 0 chat_bubble.dart
+12/05/2025  09:19                 0 loading.dart
+12/05/2025  09:19               415 logo_widget.dart
+12/05/2025  09:19             1,631 splash_loader.dart
+               5 File(s)          2,449 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\models
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:21    <DIR>          ..
+12/05/2025  09:19                 0 conversation_model.dart
+12/05/2025  09:19               599 message_model.dart
+12/05/2025  09:19                 0 user_model.dart
+               3 File(s)            599 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\routes
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:21    <DIR>          ..
+12/05/2025  09:19             2,768 routes.dart
+               1 File(s)          2,768 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\screens
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:21    <DIR>          ..
+12/05/2025  09:19    <DIR>          auth
+12/05/2025  09:19    <DIR>          chat
+12/05/2025  09:19    <DIR>          guest_chat
+12/05/2025  09:19    <DIR>          profile
+12/05/2025  09:19    <DIR>          settings
+12/05/2025  09:19    <DIR>          splash
+               0 File(s)              0 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\screens\auth
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19             2,119 callback_screen.dart
+12/05/2025  09:19             3,892 forgot_password_screen.dart
+12/05/2025  09:19             6,366 login_screen.dart
+12/05/2025  09:19             5,981 register_screen.dart
+12/05/2025  09:19             1,891 registration_success_screen.dart
+12/05/2025  09:19             3,122 two_factor_screen.dart
+               6 File(s)         23,371 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\screens\chat
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19               359 chat_history_screen.dart
+12/05/2025  09:19            11,157 chat_screen.dart
+12/05/2025  09:19             2,240 chat_summary_screen.dart
+               3 File(s)         13,756 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\screens\guest_chat
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19             8,157 guest_chat_screen.dart
+               1 File(s)          8,157 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\screens\profile
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19               357 profile_screen.dart
+               1 File(s)            357 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\screens\settings
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19               362 settings_screen.dart
+               1 File(s)            362 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\screens\splash
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19             3,153 splash_screen.dart
+               1 File(s)          3,153 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\services
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:21    <DIR>          ..
+12/05/2025  09:19             1,858 auth_service.dart
+12/05/2025  09:19    <DIR>          chat
+12/05/2025  09:19             3,339 chat_service.dart
+12/05/2025  09:19                 0 profile_service.dart
+12/05/2025  09:19                 0 twilio_service.dart
+               4 File(s)          5,197 bytes
+
+ Directory of D:\VSCode\projects\CoachingAI\lib\services\chat
+
+12/05/2025  09:19    <DIR>          .
+12/05/2025  09:19    <DIR>          ..
+12/05/2025  09:19             2,191 chat_api.dart
+12/05/2025  09:19               464 chat_service.dart
+12/05/2025  09:19             1,438 guest_chat_service.dart
+12/05/2025  09:19             1,440 user_chat_service.dart
+               4 File(s)          5,533 bytes
+
+     Total Files Listed:
+              39 File(s)         72,036 bytes
+              53 Dir(s)  494,592,688,128 bytes free

@@ -40,9 +40,12 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password.trim(),
       );
 
-      // 2. Get Chatwoot Identity info from webhook
-      final chatIdentity = await _authService.fetchChatIdentity(email.trim());
-
+      // 2. Get Chatwoot Identity info from webhook using email + UUID
+      final chatIdentity = await _authService.fetchChatIdentity(
+        email: email.trim(),
+        userId: user.id,
+      );
+      debugPrint('🔍 Chat identity response: $chatIdentity');
       // 3. Navigate to ChatScreen with all chat info
       if (mounted) {
         Navigator.pushReplacementNamed(

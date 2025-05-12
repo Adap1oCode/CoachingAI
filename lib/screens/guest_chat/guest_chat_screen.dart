@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../../services/chat/chat_service.dart';
 import '../../services/chat/guest_chat_service.dart';
 
