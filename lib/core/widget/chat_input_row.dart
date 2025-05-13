@@ -5,6 +5,8 @@ class ChatInputRow extends StatelessWidget {
   final VoidCallback onSend;
   final bool isSending;
   final FocusNode focusNode;
+  final VoidCallback? onSummarize;
+  final bool showSummarize;
 
   const ChatInputRow({
     super.key,
@@ -12,6 +14,8 @@ class ChatInputRow extends StatelessWidget {
     required this.onSend,
     required this.isSending,
     required this.focusNode,
+    this.onSummarize,
+    this.showSummarize = false,
   });
 
   @override
@@ -20,10 +24,17 @@ class ChatInputRow extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
+          if (showSummarize && onSummarize != null) ...[
+            IconButton(
+              icon: const Icon(Icons.auto_awesome, color: Colors.black),
+              onPressed: onSummarize,
+            ),
+            const SizedBox(width: 12),
+          ],
+
           const Icon(Icons.add),
           const SizedBox(width: 12),
-          const Icon(Icons.tune),
-          const SizedBox(width: 12),
+
           Expanded(
             child: TextField(
               controller: controller,
@@ -46,9 +57,16 @@ class ChatInputRow extends StatelessWidget {
           const SizedBox(width: 12),
           const Icon(Icons.mic),
           const SizedBox(width: 12),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: isSending ? null : onSend,
+
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white),
+              onPressed: isSending ? null : onSend,
+            ),
           ),
         ],
       ),

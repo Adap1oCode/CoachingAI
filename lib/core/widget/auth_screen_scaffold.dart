@@ -10,6 +10,7 @@ class AuthScreenScaffold extends StatelessWidget {
   final int? conversationId;
   final VoidCallback onStartNewConversation;
   final void Function(int conversationId) onSelectConversation;
+  final List<Widget>? actions; // ✅ NEW PARAM
 
   const AuthScreenScaffold({
     super.key,
@@ -20,6 +21,7 @@ class AuthScreenScaffold extends StatelessWidget {
     required this.conversationId,
     required this.onStartNewConversation,
     required this.onSelectConversation,
+    this.actions, // ✅ Accept actions
   });
 
   @override
@@ -40,11 +42,14 @@ class AuthScreenScaffold extends StatelessWidget {
               ),
             )
           : null,
-      appBar: ChatAppBar(
-        title: title,
-        initials: initials,
-        onMenuTap: isMobile ? () => scaffoldKey.currentState?.openDrawer() : null,
-      ),
+        appBar: ChatAppBar(
+  title: title,
+  initials: initials,
+  isGuest: true, // ✅ this disables avatar tap and ensures it's still shown
+  onMenuTap: isMobile ? () => scaffoldKey.currentState?.openDrawer() : null,
+),
+
+
       body: Row(
         children: [
           if (!isMobile)

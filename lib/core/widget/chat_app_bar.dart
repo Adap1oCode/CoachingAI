@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:coaching_ai_new/constants/route_names.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String initials;
   final VoidCallback? onMenuTap;
+  final bool isGuest; // ✅ NEW
 
   const ChatAppBar({
     super.key,
     required this.title,
     required this.initials,
     this.onMenuTap,
+    this.isGuest = false, // ✅ default false
   });
 
   @override
@@ -18,6 +21,9 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = Supabase.instance.client.auth.currentSession;
+    final isLoggedIn = session != null;
+
     return AppBar(
       backgroundColor: const Color(0xFF00BF6D),
       foregroundColor: Colors.white,
@@ -34,9 +40,12 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.only(right: 16.0),
           child: _HoverAvatar(
             initials: initials,
+            isLoggedIn: isLoggedIn,
+            isGuest: isGuest, // ✅ pass through
             onTap: () {
-              print('👆 Avatar tapped. Navigating to: ${RouteNames.account}');
-              Navigator.pushNamed(context, RouteNames.account);
+              if (!isGuest && isLoggedIn) {
+                Navigator.pushNamed(context, RouteNames.account);
+              }
             },
           ),
         ),
@@ -47,11 +56,15 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 
 class _HoverAvatar extends StatefulWidget {
   final String initials;
+  final bool isLoggedIn;
+  final bool isGuest;
   final VoidCallback onTap;
 
   const _HoverAvatar({
     required this.initials,
     required this.onTap,
+    required this.isLoggedIn,
+    required this.isGuest,
   });
 
   @override
@@ -63,6 +76,20 @@ class _HoverAvatarState extends State<_HoverAvatar> {
 
   @override
   Widget build(BuildContext context) {
+    final avatar = CircleAvatar(
+      radius: 20,
+      backgroundColor: Colors.transparent,
+      child: Text(
+        widget.initials,
+        style: const TextStyle(
+          color: Color(0xFF00BF6D),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+
+    if (widget.isGuest) return avatar;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
@@ -76,17 +103,7 @@ class _HoverAvatarState extends State<_HoverAvatar> {
             shape: BoxShape.circle,
           ),
           padding: const EdgeInsets.all(2),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.transparent,
-            child: Text(
-              widget.initials,
-              style: const TextStyle(
-                color: Color(0xFF00BF6D),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+          child: avatar,
         ),
       ),
     );
