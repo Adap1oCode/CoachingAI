@@ -8,11 +8,13 @@ class AccountScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fullName = UserSession.fullName;
+    final initials = UserSession.initials;
+
     return AuthScreenScaffold(
       title: 'My Account',
-      initials: UserSession.initials,
-      isGuest: UserSession.isGuest,
-      conversations: const [], // No sidebar required for this screen
+      initials: initials,
+      conversations: const [], // ✅ No chat sidebar needed here
       conversationId: null,
       onStartNewConversation: () {},
       onSelectConversation: (_) {},
@@ -30,11 +32,10 @@ class AccountScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  UserSession.fullName,
+                  fullName,
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 32),
-
                 _AccountTile(
                   icon: Icons.person_outline,
                   label: 'My Account',
@@ -43,17 +44,17 @@ class AccountScreen extends StatelessWidget {
                 _AccountTile(
                   icon: Icons.notifications_none,
                   label: 'Notifications',
-                  onTap: () {}, // TODO
+                  onTap: () {},
                 ),
                 _AccountTile(
                   icon: Icons.settings_outlined,
                   label: 'Settings',
-                  onTap: () {}, // TODO
+                  onTap: () {},
                 ),
                 _AccountTile(
                   icon: Icons.help_outline,
                   label: 'Help Center',
-                  onTap: () {}, // TODO
+                  onTap: () {},
                 ),
                 _AccountTile(
                   icon: Icons.logout,
