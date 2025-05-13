@@ -67,8 +67,8 @@ class _ChatSidebarState extends State<ChatSidebar> {
                   padding: const EdgeInsets.only(
                     left: 16.0,
                     right: 16.0,
-                    top: 20.0,
-                    bottom: 8.0,
+                    top: 40.0,
+                    bottom: 16.0,
                   ),
                   child: SearchConversationsInput(
                     controller: _searchController,
@@ -82,7 +82,7 @@ class _ChatSidebarState extends State<ChatSidebar> {
                   onPressed: widget.onStartNewConversation,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 100),
               Expanded(
                 child: widget.isLoading
                     ? const Center(child: CircularProgressIndicator())

@@ -2,9 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/route_names.dart';
-import '../../services/chat/chat_service.dart';
 import '../../services/chat/user_chat_service.dart';
-
+import '../../services/chat/chat_service.dart'; // for ChatEventType
+import '../../core/widget/auth_screen_scaffold.dart';
+import '../../core/widget/chat_input_row.dart';
+import '../../core/widget/empty_chat_prompt.dart';
+import '../../core/widget/message_bubble.dart';
+import '../../core/widget/animated_typing_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
   final String userId;
@@ -31,6 +35,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _inputFocusNode = FocusNode();
 
   late final UserChatService _chatService;
   int? _conversationId;
@@ -39,25 +44,24 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Map<String, dynamic>> _conversations = [];
   bool _isSending = false;
   bool _hasStartedChat = false;
+  bool _isTyping = false;
+  String? _summary;
 
   @override
   void initState() {
     super.initState();
-
     _chatService = UserChatService(
       userId: widget.userId,
       contactId: widget.contactId,
       accountId: widget.accountId,
       sourceId: widget.sourceId,
     );
-
     _loadConversations();
   }
 
   String getInitials(String name) {
     final parts = name.trim().split(' ');
-    if (parts.length == 1) return parts[0][0];
-    return parts[0][0] + parts.last[0];
+    return parts.length == 1 ? parts[0][0] : parts[0][0] + parts.last[0];
   }
 
   Future<void> _loadConversations() async {
@@ -65,39 +69,30 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('⚠️ contactId is null — cannot load conversations');
       return;
     }
-
     final list = await _chatService.getConversations();
-
-    final patchedList = list.map((conv) => {
-          ...conv,
-          'last_message': 'Tap to open this conversation',
-        }).toList();
-
-    setState(() => _conversations = patchedList);
+    final patched = list.map((conv) => {
+      ...conv,
+      'last_message': 'Tap to open this conversation',
+    }).toList();
+    setState(() => _conversations = patched);
   }
 
   Future<void> _loadConversationMessages(int conversationId) async {
     final result = await _chatService.getMessages(conversationId.toString());
     if (result != null && result['messages'] is List) {
-      final rawMessages = result['messages'] as List<dynamic>;
-
-      final processed = rawMessages
-          .map((msg) => {
-                'id': msg['id'],
-                'content': msg['content'],
-                'is_from_guest': msg['is_from_guest'],
-              })
-          .cast<Map<String, dynamic>>()
-          .toList();
-
+      final rawMessages = result['messages'] as List;
+      final processed = rawMessages.map((msg) => {
+        'id': msg['id'],
+        'content': msg['content'],
+        'is_from_guest': msg['is_from_guest'],
+      }).cast<Map<String, dynamic>>().toList();
       processed.sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
-
       setState(() {
         _conversationId = conversationId;
         _messages = processed;
         _hasStartedChat = true;
+        _isTyping = false;
       });
-
       _scrollToBottom();
     }
   }
@@ -106,13 +101,24 @@ class _ChatScreenState extends State<ChatScreen> {
     final content = _messageController.text.trim();
     if (content.isEmpty || _isSending) return;
 
-    setState(() => _isSending = true);
+    setState(() {
+      _isSending = true;
+      _isTyping = true;
+      _messages.add({
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'content': content,
+        'is_from_guest': false,
+      });
+      _messageController.clear();
+    });
+
+    _scrollToBottom();
 
     final eventType = _conversationId == null
-    ? (_conversations.isEmpty
-        ? ChatEventType.initialAccountChat
-        : ChatEventType.newConversation)
-    : ChatEventType.newMessage;
+        ? (_conversations.isEmpty
+            ? ChatEventType.initialAccountChat
+            : ChatEventType.newConversation)
+        : ChatEventType.newMessage;
 
     final response = await _chatService.sendMessage(
       content: content,
@@ -121,20 +127,17 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     if (response != null && response['event'] == 'message_created') {
-      _messageController.clear();
-
-      setState(() {
-        _conversationId =
-            int.tryParse(response['conversation_id']?.toString() ?? '');
-      });
-
+      setState(() => _conversationId = int.tryParse(response['conversation_id']?.toString() ?? ''));
       await _loadConversations();
       if (_conversationId != null) {
         await _loadConversationMessages(_conversationId!);
       }
+    } else {
+      setState(() => _isTyping = false);
     }
 
     setState(() => _isSending = false);
+    _inputFocusNode.requestFocus();
   }
 
   void _startNewConversation() {
@@ -142,6 +145,9 @@ class _ChatScreenState extends State<ChatScreen> {
       _conversationId = null;
       _messages = [];
       _hasStartedChat = true;
+    });
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _inputFocusNode.requestFocus();
     });
   }
 
@@ -157,194 +163,56 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> msg) {
-    final isUser = msg['is_from_guest'] != true;
-    return Container(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isUser ? Colors.green : Colors.grey[300],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Text(
-          msg['content'] ?? '',
-          style: TextStyle(color: isUser ? Colors.white : Colors.black87),
-        ),
-      ),
-    );
+  void _summarizeChat() {
+    setState(() {
+      _summary = _messages.map((m) => m['content']).join('\n');
+    });
+    print('🧠 Summary: $_summary'); // You can later pass this to an AI call
   }
 
   @override
   Widget build(BuildContext context) {
     final initials = getInitials(widget.userName).toUpperCase();
 
-    return Scaffold(
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFF00BF6D)),
-              child: Text(
-                widget.userName,
-                style: const TextStyle(color: Colors.white, fontSize: 20),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Chat History'),
-              onTap: () {}, // Placeholder
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF00BF6D),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text("Chat"),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: PopupMenuButton<String>(
-              onSelected: (value) async {
-                if (value == 'profile') {
-                  Navigator.pushNamed(context, RouteNames.profile);
-                } else if (value == 'logout') {
-                  await Supabase.instance.client.auth.signOut();
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      RouteNames.login,
-                      (_) => false,
-                    );
-                  }
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'profile',
-                  child: Text('Profile'),
+    return AuthScreenScaffold(
+      title: "Chat",
+      initials: initials,
+      conversations: _conversations,
+      conversationId: _conversationId,
+      onStartNewConversation: _startNewConversation,
+      onSelectConversation: _loadConversationMessages,
+      child: _hasStartedChat
+          ? Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    itemCount: _messages.length + (_isTyping ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (_isTyping && index == _messages.length) {
+                        return const AnimatedTypingBubble();
+                      }
+                      final msg = _messages[index];
+                      return MessageBubble(
+                        content: msg['content'] ?? '',
+                        isFromGuest: msg['is_from_guest'] == true,
+                      );
+                    },
+                  ),
                 ),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Text('Logout'),
+                const Divider(height: 1),
+                ChatInputRow(
+                  controller: _messageController,
+                  onSend: _sendMessage,
+                  isSending: _isSending,
+                  focusNode: _inputFocusNode,
+                  showSummarize: true,
+                  onSummarize: _summarizeChat,
                 ),
               ],
-              child: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Color(0xFF00BF6D),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          Container(
-            width: 250,
-            color: Colors.grey[200],
-            child: ListView.builder(
-              itemCount: _conversations.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return ListTile(
-                    leading: const Icon(Icons.add),
-                    title: const Text("New Chat"),
-                    onTap: _startNewConversation,
-                    tileColor: Colors.green.shade50,
-                  );
-                }
-
-                final convo = _conversations[index - 1];
-                return ListTile(
-                  title: Text("Conversation #${convo['conversation_id']}"),
-                  subtitle: Text(convo['last_message'] ?? ''),
-                  onTap: () =>
-                      _loadConversationMessages(convo['conversation_id']),
-                  selected: convo['conversation_id'] == _conversationId,
-                );
-              },
-            ),
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: _hasStartedChat
-                ? Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            return _buildMessageBubble(_messages[index]);
-                          },
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.add),
-                            const SizedBox(width: 12),
-                            const Icon(Icons.tune),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextField(
-                                controller: _messageController,
-                                textInputAction: TextInputAction.send,
-                                onSubmitted: (_) => _sendMessage(),
-                                decoration: InputDecoration(
-                                  hintText: 'Type a message...',
-                                  filled: true,
-                                  fillColor:
-                                      const Color(0xFF00BF6D).withOpacity(0.08),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 20.0, vertical: 12.0),
-                                  border: const OutlineInputBorder(
-                                    borderSide: BorderSide.none,
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(50)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(Icons.mic),
-                            const SizedBox(width: 12),
-                            IconButton(
-                              icon: const Icon(Icons.send),
-                              onPressed: _sendMessage,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _startNewConversation,
-                      icon: const Icon(Icons.chat),
-                      label: const Text("Start New Chat"),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                      ),
-                    ),
-                  ),
-          ),
-        ],
-      ),
+            )
+          : EmptyChatPrompt(onPressed: _startNewConversation),
     );
   }
 }

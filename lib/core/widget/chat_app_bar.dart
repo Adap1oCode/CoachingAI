@@ -22,7 +22,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    final isLoggedIn = session != null;
+    final isLoggedIn = true; // ✅ Force avatar to always show
 
     return AppBar(
       backgroundColor: const Color(0xFF00BF6D),
