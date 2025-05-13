@@ -74,36 +74,42 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      decoration: inputDecoration(AppStrings.email),
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (val) => email = val,
-                      validator: validateEmail,
-                      onFieldSubmitted: (_) => _sendResetLink(),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          decoration: inputDecoration(AppStrings.email),
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.done,
+                          onChanged: (val) => email = val,
+                          validator: validateEmail,
+                          onFieldSubmitted: (_) => _sendResetLink(),
+                        ),
+                        const SizedBox(height: 16),
+                        if (sent)
+                          const Text(
+                            'Password reset email sent. Check your inbox!',
+                            style: TextStyle(color: Colors.green),
+                          ),
+                        if (error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(error!,
+                                style: const TextStyle(color: Colors.red)),
+                          ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _sendResetLink,
+                          style: elevatedButtonStyle(),
+                          child: const Text(AppStrings.sendAgain),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    if (sent)
-                      const Text(
-                        'Password reset email sent. Check your inbox!',
-                        style: TextStyle(color: Colors.green),
-                      ),
-                    if (error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(error!, style: const TextStyle(color: Colors.red)),
-                      ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _sendResetLink,
-                      style: elevatedButtonStyle(),
-                      child: const Text(AppStrings.sendAgain),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],

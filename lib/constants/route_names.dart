@@ -12,4 +12,8 @@ class RouteNames {
   static const twoFA = '/2fa';
   static const registrationSuccess = '/registration-success';
   static const callback = '/callback';
+  static const account = '/account';
+  static const editProfile = '/edit-profile';
+static const logout = '/logout';
+
 }

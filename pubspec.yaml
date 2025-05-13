@@ -14,7 +14,7 @@ dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^1.10.16
-  google_fonts: ^6.1.0
+  google_fonts: ^6.2.1
   uuid: ^3.0.7
   cupertino_icons: ^1.0.8
   path_provider: ^2.0.15

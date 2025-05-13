@@ -14,37 +14,43 @@ class RegistrationSuccessScreen extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const LogoWidget(height: 100),
-              const SizedBox(height: 40),
-              Text(
-                'Registration Complete',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall!
-                    .copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const LogoWidget(height: 100),
+                  const SizedBox(height: 40),
+                  Text(
+                    'Registration Complete',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall!
+                        .copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Check your email to verify your account before logging in.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium!
+                        .copyWith(color: Colors.grey[700]),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(
+                          context, RouteNames.login);
+                    },
+                    style: elevatedButtonStyle(),
+                    child: const Text(AppStrings.signIn),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Check your email to verify your account before logging in.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium!
-                    .copyWith(color: Colors.grey[700]),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, RouteNames.login);
-                },
-                style: elevatedButtonStyle(),
-                child: const Text(AppStrings.signIn),
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -2,6 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/chat/chat_service.dart';
 import '../../services/chat/guest_chat_service.dart';
+import '../../core/utils/form_decorators.dart';
+import '../../core/utils/button_styles.dart';
+import '../../core/widget/empty_chat_prompt.dart';
+import '../../core/widget/message_bubble.dart';
+import '../../core/widget/chat_input_row.dart';
+import '../../core/widget/animated_typing_bubble.dart';
+import '../../core/widget/auth_screen_scaffold.dart';
 
 class GuestChatScreen extends StatefulWidget {
   const GuestChatScreen({super.key});
@@ -13,6 +20,7 @@ class GuestChatScreen extends StatefulWidget {
 class _GuestChatScreenState extends State<GuestChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _inputFocusNode = FocusNode();
 
   late final GuestChatService _chatService;
   int? _conversationId;
@@ -22,20 +30,21 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
   bool _isSending = false;
   bool _hasStartedBefore = false;
   bool _hasStartedChat = false;
+  bool _isTyping = false;
 
   @override
   void initState() {
     super.initState();
     _chatService = GuestChatService();
+    _loadConversations();
   }
 
   Future<void> _loadConversations() async {
     final list = await _chatService.getConversations();
-
     final patchedList = list.map((conv) => {
-          ...conv,
-          'last_message': 'Tap to open this conversation',
-        }).toList();
+      ...conv,
+      'last_message': 'Tap to open this conversation',
+    }).toList();
 
     setState(() => _conversations = patchedList);
   }
@@ -44,7 +53,6 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
     final result = await _chatService.getMessages(conversationId.toString());
     if (result != null && result['messages'] is List) {
       final rawMessages = result['messages'] as List<dynamic>;
-
       final processed = rawMessages
           .map((msg) => {
                 'id': msg['id'],
@@ -60,6 +68,7 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
         _conversationId = conversationId;
         _messages = processed;
         _hasStartedChat = true;
+        _isTyping = false;
       });
 
       _scrollToBottom();
@@ -70,7 +79,20 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
     final content = _messageController.text.trim();
     if (content.isEmpty || _isSending) return;
 
-    setState(() => _isSending = true);
+    setState(() {
+      _isSending = true;
+      _isTyping = true;
+
+      _messages.add({
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'content': content,
+        'is_from_guest': true,
+      });
+
+      _messageController.clear();
+    });
+
+    _scrollToBottom();
 
     final eventType = _conversationId == null
         ? (_hasStartedBefore
@@ -85,11 +107,9 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
     );
 
     if (response != null && response['event'] == 'message_created') {
-      _messageController.clear();
-
+      final newId = int.tryParse(response['conversation_id']?.toString() ?? '');
       setState(() {
-        _conversationId =
-            int.tryParse(response['conversation_id']?.toString() ?? '');
+        _conversationId = newId;
         _hasStartedBefore = true;
       });
 
@@ -97,6 +117,8 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
       if (_conversationId != null) {
         await _loadConversationMessages(_conversationId!);
       }
+    } else {
+      setState(() => _isTyping = false);
     }
 
     setState(() => _isSending = false);
@@ -107,6 +129,10 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
       _conversationId = null;
       _messages = [];
       _hasStartedChat = true;
+    });
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _inputFocusNode.requestFocus();
     });
   }
 
@@ -122,117 +148,45 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
     }
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> msg) {
-    final isGuest = msg['is_from_guest'] == true;
-    return Container(
-      alignment: isGuest ? Alignment.centerRight : Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isGuest ? Colors.blueAccent : Colors.grey[300],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Text(
-          msg['content'] ?? '',
-          style: TextStyle(color: isGuest ? Colors.white : Colors.black87),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Guest Chat"),
-      ),
-      body: Row(
-        children: [
-          Container(
-            width: 250,
-            color: Colors.grey[200],
-            child: ListView.builder(
-              itemCount: _conversations.length + 1, // +1 for header
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return ListTile(
-                    leading: const Icon(Icons.add),
-                    title: const Text("New Chat"),
-                    onTap: _startNewConversation,
-                    tileColor: Colors.blue.shade50,
-                  );
-                }
-
-                final convo = _conversations[index - 1];
-                return ListTile(
-                  title: Text("Conversation #${convo['conversation_id']}"),
-                  subtitle: Text(convo['last_message'] ?? ''),
-                  onTap: () =>
-                      _loadConversationMessages(convo['conversation_id']),
-                  selected: convo['conversation_id'] == _conversationId,
-                );
-              },
-            ),
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: _hasStartedChat
-                ? Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            return _buildMessageBubble(_messages[index]);
-                          },
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _messageController,
-                                textInputAction: TextInputAction.send,
-                                onSubmitted: (_) => _sendMessage(),
-                                decoration: const InputDecoration(
-                                  hintText: 'Type a message...',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.send),
-                              onPressed: _sendMessage,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _startNewConversation,
-                      icon: const Icon(Icons.chat),
-                      label: const Text("Start New Chat"),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                      ),
-                    ),
+    return AuthScreenScaffold(
+      title: 'Guest Chat',
+      initials: 'GU',
+      conversations: _conversations,
+      conversationId: _conversationId,
+      onStartNewConversation: _startNewConversation,
+      onSelectConversation: _loadConversationMessages,
+      child: _hasStartedChat
+          ? Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    itemCount: _messages.length + (_isTyping ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == _messages.length && _isTyping) {
+                        return const AnimatedTypingBubble();
+                      }
+                      final msg = _messages[index];
+                      return MessageBubble(
+                        content: msg['content'] ?? '',
+                        isFromGuest: msg['is_from_guest'] == true,
+                      );
+                    },
                   ),
-          ),
-        ],
-      ),
+                ),
+                const Divider(height: 1),
+                ChatInputRow(
+                  controller: _messageController,
+                  onSend: _sendMessage,
+                  isSending: _isSending,
+                  focusNode: _inputFocusNode,
+                ),
+              ],
+            )
+          : EmptyChatPrompt(onPressed: _startNewConversation),
     );
   }
 }

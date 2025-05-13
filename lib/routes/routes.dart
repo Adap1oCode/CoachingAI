@@ -7,13 +7,18 @@ import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/two_factor_screen.dart';
 import '../screens/auth/registration_success_screen.dart';
-import '../screens/auth/callback_screen.dart'; // ✅ NEW
+import '../screens/auth/callback_screen.dart';
 import '../screens/guest_chat/guest_chat_screen.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/chat/chat_history_screen.dart';
 import '../screens/chat/chat_summary_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../core/widget/auth_screen_scaffold.dart';
+import '../screens/account/account_screen.dart';
+import '../screens/account/edit_profile_screen.dart';
+import '../screens/auth/logout_screen.dart';
+
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
@@ -29,7 +34,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => const TwoFactorScreen());
     case RouteNames.registrationSuccess:
       return MaterialPageRoute(builder: (_) => const RegistrationSuccessScreen());
-    case RouteNames.callback: // ✅ Ensure callback route is defined
+    case RouteNames.callback:
       return MaterialPageRoute(builder: (_) => const CallbackScreen());
     case RouteNames.guestChat:
       return MaterialPageRoute(builder: (_) => const GuestChatScreen());
@@ -53,7 +58,24 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => const ProfileScreen());
     case RouteNames.settings:
       return MaterialPageRoute(builder: (_) => const SettingsScreen());
-    default:
+    case RouteNames.account:
+      return MaterialPageRoute(
+        builder: (_) => AuthScreenScaffold(
+          title: 'Account',
+          initials: 'GU',
+          conversations: const [],
+          conversationId: null,
+          onStartNewConversation: () {},
+          onSelectConversation: (_) {},
+          child: const AccountScreen(),
+        ),
+      );
+    case RouteNames.editProfile:
+  return MaterialPageRoute(builder: (_) => const EditProfileScreen());
+
+case RouteNames.logout:
+  return MaterialPageRoute(builder: (_) => const LogoutScreen());
+default:
       return MaterialPageRoute(
         builder: (_) => const Scaffold(
           body: Center(child: Text('Route not found')),

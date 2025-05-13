@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
-// import 'routes/routes.dart'; // make sure this exposes generateRoute
-import 'package:coaching_ai_new/constants/route_names.dart';
+import 'constants/route_names.dart';
 import 'routes/routes.dart' show generateRoute;
-
-
+import 'core/theme/app_theme.dart'; // ✅ Add this line
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +24,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Coaching AI',
       debugShowCheckedModeBanner: false,
-      initialRoute: RouteNames.splash, // or '/' if splash is route-mapped
+      theme: appTheme, // ✅ Use the custom theme
+      initialRoute: RouteNames.splash,
       onGenerateRoute: generateRoute,
     );
   }

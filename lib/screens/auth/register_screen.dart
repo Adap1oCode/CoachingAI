@@ -11,7 +11,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:coaching_ai_new/config/app_config.dart';
 
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -31,53 +30,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
 
   void _register() async {
-  if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
 
-  setState(() {
-    loading = true;
-    error = null;
-  });
+    setState(() {
+      loading = true;
+      error = null;
+    });
 
-  try {
-    // 1. Register user with Supabase
-    final user = await _authService.signUp(
-      email: email.trim(),
-      password: password.trim(),
-      name: name.trim(),
-    );
-
-    final userId = user.id; // ✅ UUID from Supabase
-
-    // 2. Send user info to n8n (to create Chatwoot contact)
     try {
-      await http.post(
-        Uri.parse(Env.registrationWebhookUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email.trim(),
-          'full_name': name.trim(),
-          'user_id': userId, // ✅ Send UUID to n8n
-        }),
+      // 1. Register user with Supabase
+      final user = await _authService.signUp(
+        email: email.trim(),
+        password: password.trim(),
+        name: name.trim(),
       );
-    } catch (e) {
-      debugPrint('n8n webhook failed: $e');
-    }
 
-    // 3. Notify and redirect
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Account created! Check your email to verify."),
-        ),
-      );
-      Navigator.pushReplacementNamed(context, RouteNames.login);
+      final userId = user.id;
+
+      // 2. Send user info to n8n (to create Chatwoot contact)
+      try {
+        await http.post(
+          Uri.parse(Env.registrationWebhookUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email.trim(),
+            'full_name': name.trim(),
+            'user_id': userId,
+          }),
+        );
+      } catch (e) {
+        debugPrint('n8n webhook failed: $e');
+      }
+
+      // 3. Notify and redirect
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Account created! Check your email to verify."),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, RouteNames.login);
+      }
+    } catch (e) {
+      setState(() => error = e.toString());
+    } finally {
+      setState(() => loading = false);
     }
-  } catch (e) {
-    setState(() => error = e.toString());
-  } finally {
-    setState(() => loading = false);
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,65 +104,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         .copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: constraints.maxHeight * 0.05),
-                  Form(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          decoration: inputDecoration(AppStrings.fullName),
-                          textInputAction: TextInputAction.next,
-                          onChanged: (val) => name = val,
-                          validator: (val) =>
-                              val == null || val.isEmpty ? AppStrings.nameRequired : null,
-                        ),
-                        const SizedBox(height: 16.0),
-                        TextFormField(
-                          decoration: inputDecoration(AppStrings.email),
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          onChanged: (val) => email = val,
-                          validator: validateEmail,
-                        ),
-                        const SizedBox(height: 16.0),
-                        TextFormField(
-                          decoration: inputDecoration(AppStrings.password).copyWith(
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: Form(
+                        key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              decoration: inputDecoration(AppStrings.fullName),
+                              textInputAction: TextInputAction.next,
+                              onChanged: (val) => name = val,
+                              validator: (val) =>
+                                  val == null || val.isEmpty
+                                      ? AppStrings.nameRequired
+                                      : null,
                             ),
-                          ),
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _register(),
-                          onChanged: (val) => password = val,
-                          validator: validatePassword,
+                            const SizedBox(height: 16.0),
+                            TextFormField(
+                              decoration: inputDecoration(AppStrings.email),
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              onChanged: (val) => email = val,
+                              validator: validateEmail,
+                            ),
+                            const SizedBox(height: 16.0),
+                            TextFormField(
+                              decoration:
+                                  inputDecoration(AppStrings.password).copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => _register(),
+                              onChanged: (val) => password = val,
+                              validator: validatePassword,
+                            ),
+                            const SizedBox(height: 24),
+                            if (loading) const CircularProgressIndicator(),
+                            if (error != null) ...[
+                              const SizedBox(height: 8),
+                              Text(error!,
+                                  style:
+                                      const TextStyle(color: Colors.red)),
+                            ],
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: loading ? null : _register,
+                              style: elevatedButtonStyle(),
+                              child: Text(AppStrings.register),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () => Navigator.pushReplacementNamed(
+                                  context, RouteNames.login),
+                              child: Text(AppStrings.alreadyHaveAccount +
+                                  AppStrings.signIn),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-                        if (loading) const CircularProgressIndicator(),
-                        if (error != null) ...[
-                          const SizedBox(height: 8),
-                          Text(error!, style: const TextStyle(color: Colors.red)),
-                        ],
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: loading ? null : _register,
-                          style: elevatedButtonStyle(),
-                          child: Text(AppStrings.register),
-                        ),
-                        const SizedBox(height: 12),
-                        TextButton(
-                          onPressed: () =>
-                              Navigator.pushReplacementNamed(context, RouteNames.login),
-                          child: Text(AppStrings.alreadyHaveAccount + AppStrings.signIn),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],

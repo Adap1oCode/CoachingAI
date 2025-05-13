@@ -34,19 +34,17 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 1. Log in to Supabase
       final user = await _authService.login(
         email: email.trim(),
         password: password.trim(),
       );
 
-      // 2. Get Chatwoot Identity info from webhook using email + UUID
       final chatIdentity = await _authService.fetchChatIdentity(
         email: email.trim(),
         userId: user.id,
       );
       debugPrint('🔍 Chat identity response: $chatIdentity');
-      // 3. Navigate to ChatScreen with all chat info
+
       if (mounted) {
         Navigator.pushReplacementNamed(
           context,
@@ -102,62 +100,69 @@ class _LoginScreenState extends State<LoginScreen> {
                         .copyWith(color: Colors.grey[600]),
                   ),
                   SizedBox(height: constraints.maxHeight * 0.05),
-                  Form(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          decoration: inputDecoration(AppStrings.email),
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          onChanged: (val) => email = val,
-                          validator: validateEmail,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          decoration:
-                              inputDecoration(AppStrings.password).copyWith(
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: Form(
+                        key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              decoration: inputDecoration(AppStrings.email),
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              onChanged: (val) => email = val,
+                              validator: validateEmail,
                             ),
-                          ),
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _login(),
-                          onChanged: (val) => password = val,
-                          validator: validatePassword,
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              decoration:
+                                  inputDecoration(AppStrings.password).copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => _login(),
+                              onChanged: (val) => password = val,
+                              validator: validatePassword,
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () => Navigator.pushNamed(
+                                  context, RouteNames.forgotPassword),
+                              child: const Text(AppStrings.forgotPasswordCTA),
+                            ),
+                            const SizedBox(height: 8),
+                            if (loading) const CircularProgressIndicator(),
+                            if (error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  error!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: loading ? null : _login,
+                              style: elevatedButtonStyle(),
+                              child: const Text(AppStrings.signIn),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, RouteNames.forgotPassword),
-                          child: const Text(AppStrings.forgotPasswordCTA),
-                        ),
-                        const SizedBox(height: 8),
-                        if (loading) const CircularProgressIndicator(),
-                        if (error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child:
-                                Text(error!, style: const TextStyle(color: Colors.red)),
-                          ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: loading ? null : _login,
-                          style: elevatedButtonStyle(),
-                          child: const Text(AppStrings.signIn),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],

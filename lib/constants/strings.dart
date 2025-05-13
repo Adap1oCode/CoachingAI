@@ -9,13 +9,16 @@ class AppStrings {
   static const newPassword = 'New Password';
   static const confirmNewPassword = 'Confirm New Password';
 
-  // --- Buttons & CTAs ---
-  static const signIn = 'Sign In';
-  static const signUp = 'Sign Up';
-  static const register = 'Register';
-  static const next = 'Next';
-  static const changePassword = 'Change Password';
-  static const sendAgain = 'Send again';
+// --- Buttons & CTAs ---
+static const signIn = 'Sign In';
+static const signUp = 'Sign Up';
+static const register = 'Register';
+static const login = 'Login'; // ✅ Add this
+static const continueAsGuest = 'Continue as Guest'; // ✅ And this
+static const next = 'Next';
+static const changePassword = 'Change Password';
+static const sendAgain = 'Send again';
+
 
   // --- Titles ---
   static const signInTitle = 'Sign In';
@@ -44,5 +47,7 @@ class AppStrings {
   static const noAccount = 'Don’t have an account? ';
 
   static const splashSubtitle = 'Your AI-powered support assistant';
+  static const String welcomeTitle = 'Welcome';
+
 
 }
