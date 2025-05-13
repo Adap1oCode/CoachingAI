@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/route_names.dart';
 import '../../services/chat/user_chat_service.dart';
-import '../../services/chat/chat_service.dart'; // for ChatEventType
+import '../../services/chat/chat_service.dart';
 import '../../core/widget/auth_screen_scaffold.dart';
 import '../../core/widget/chat_input_row.dart';
 import '../../core/widget/empty_chat_prompt.dart';
@@ -45,17 +45,24 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isSending = false;
   bool _hasStartedChat = false;
   bool _isTyping = false;
-  String? _summary;
+  String? _initials; // ✅ Memoized initials
 
   @override
   void initState() {
     super.initState();
+
+    final user = Supabase.instance.client.auth.currentUser;
+    final fullName = user?.userMetadata?['full_name'] ?? user?.email ?? 'User';
+    _initials = getInitials(fullName).toUpperCase();
+    print('🧪 ChatScreen resolved initials: $_initials');
+
     _chatService = UserChatService(
       userId: widget.userId,
       contactId: widget.contactId,
       accountId: widget.accountId,
       sourceId: widget.sourceId,
     );
+
     _loadConversations();
   }
 
@@ -65,10 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadConversations() async {
-    if (widget.contactId == null) {
-      debugPrint('⚠️ contactId is null — cannot load conversations');
-      return;
-    }
+    if (widget.contactId == null) return;
     final list = await _chatService.getConversations();
     final patched = list.map((conv) => {
       ...conv,
@@ -84,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final processed = rawMessages.map((msg) => {
         'id': msg['id'],
         'content': msg['content'],
-        'is_from_guest': msg['is_from_guest'],
+        'is_from_user': msg['is_from_user'] ?? false,
       }).cast<Map<String, dynamic>>().toList();
       processed.sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
       setState(() {
@@ -107,7 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add({
         'id': DateTime.now().millisecondsSinceEpoch,
         'content': content,
-        'is_from_guest': false,
+        'is_from_user': true,
       });
       _messageController.clear();
     });
@@ -137,7 +141,9 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     setState(() => _isSending = false);
-    _inputFocusNode.requestFocus();
+    Future.delayed(const Duration(milliseconds: 150), () {
+      _inputFocusNode.requestFocus();
+    });
   }
 
   void _startNewConversation() {
@@ -164,19 +170,14 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _summarizeChat() {
-    setState(() {
-      _summary = _messages.map((m) => m['content']).join('\n');
-    });
-    print('🧠 Summary: $_summary'); // You can later pass this to an AI call
+    print('Summary button tapped');
   }
 
   @override
   Widget build(BuildContext context) {
-    final initials = getInitials(widget.userName).toUpperCase();
-
     return AuthScreenScaffold(
       title: "Chat",
-      initials: initials,
+      initials: _initials ?? 'U', // ✅ safe fallback
       conversations: _conversations,
       conversationId: _conversationId,
       onStartNewConversation: _startNewConversation,
@@ -196,7 +197,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       final msg = _messages[index];
                       return MessageBubble(
                         content: msg['content'] ?? '',
-                        isFromGuest: msg['is_from_guest'] == true,
+                        isFromUser: msg['is_from_user'] == true,
                       );
                     },
                   ),

@@ -1,59 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:coaching_ai_new/constants/route_names.dart';
+import 'package:coaching_ai_new/core/utils/user_session.dart';
+import 'package:coaching_ai_new/core/widget/auth_screen_scaffold.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 800;
+    return AuthScreenScaffold(
+      title: 'My Account',
+      initials: UserSession.initials,
+      isGuest: UserSession.isGuest,
+      conversations: const [], // No sidebar required for this screen
+      conversationId: null,
+      onStartNewConversation: () {},
+      onSelectConversation: (_) {},
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const CircleAvatar(
+                  radius: 36,
+                  backgroundImage: NetworkImage('https://i.postimg.cc/0jqKB6mS/Profile-Image.png'),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  UserSession.fullName,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 32),
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const CircleAvatar(
-                radius: 36,
-                backgroundImage: NetworkImage('https://i.postimg.cc/0jqKB6mS/Profile-Image.png'),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Guest User',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 32),
-
-              _AccountTile(
-                icon: Icons.person_outline,
-                label: 'My Account',
-                onTap: () => Navigator.pushNamed(context, RouteNames.editProfile),
-              ),
-              _AccountTile(
-                icon: Icons.notifications_none,
-                label: 'Notifications',
-                onTap: () {}, // TODO
-              ),
-              _AccountTile(
-                icon: Icons.settings_outlined,
-                label: 'Settings',
-                onTap: () {}, // TODO
-              ),
-              _AccountTile(
-                icon: Icons.help_outline,
-                label: 'Help Center',
-                onTap: () {}, // TODO
-              ),
-              _AccountTile(
-                icon: Icons.logout,
-                label: 'Log Out',
-                isDestructive: true,
-                onTap: () => Navigator.pushNamed(context, RouteNames.logout),
-              ),
-            ],
+                _AccountTile(
+                  icon: Icons.person_outline,
+                  label: 'My Account',
+                  onTap: () => Navigator.pushNamed(context, RouteNames.editProfile),
+                ),
+                _AccountTile(
+                  icon: Icons.notifications_none,
+                  label: 'Notifications',
+                  onTap: () {}, // TODO
+                ),
+                _AccountTile(
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                  onTap: () {}, // TODO
+                ),
+                _AccountTile(
+                  icon: Icons.help_outline,
+                  label: 'Help Center',
+                  onTap: () {}, // TODO
+                ),
+                _AccountTile(
+                  icon: Icons.logout,
+                  label: 'Log Out',
+                  isDestructive: true,
+                  onTap: () => Navigator.pushNamed(context, RouteNames.logout),
+                ),
+              ],
+            ),
           ),
         ),
       ),

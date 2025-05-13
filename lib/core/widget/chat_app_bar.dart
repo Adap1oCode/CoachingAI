@@ -6,14 +6,14 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String initials;
   final VoidCallback? onMenuTap;
-  final bool isGuest; // ✅ NEW
+  final bool isGuest;
 
   const ChatAppBar({
     super.key,
     required this.title,
     required this.initials,
     this.onMenuTap,
-    this.isGuest = false, // ✅ default false
+    this.isGuest = false,
   });
 
   @override
@@ -21,8 +21,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
-    final isLoggedIn = true; // ✅ Force avatar to always show
+    final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
 
     return AppBar(
       backgroundColor: const Color(0xFF00BF6D),
@@ -41,7 +40,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: _HoverAvatar(
             initials: initials,
             isLoggedIn: isLoggedIn,
-            isGuest: isGuest, // ✅ pass through
+            isGuest: isGuest,
             onTap: () {
               if (!isGuest && isLoggedIn) {
                 Navigator.pushNamed(context, RouteNames.account);
@@ -78,9 +77,9 @@ class _HoverAvatarState extends State<_HoverAvatar> {
   Widget build(BuildContext context) {
     final avatar = CircleAvatar(
       radius: 20,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       child: Text(
-        widget.initials,
+        widget.initials.isNotEmpty ? widget.initials : '??',
         style: const TextStyle(
           color: Color(0xFF00BF6D),
           fontWeight: FontWeight.bold,

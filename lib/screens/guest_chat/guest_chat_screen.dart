@@ -9,7 +9,6 @@ import '../../core/widget/message_bubble.dart';
 import '../../core/widget/chat_input_row.dart';
 import '../../core/widget/animated_typing_bubble.dart';
 import '../../core/widget/auth_screen_scaffold.dart';
-import '../../core/widget/summary_popup.dart';
 
 class GuestChatScreen extends StatefulWidget {
   const GuestChatScreen({super.key});
@@ -33,9 +32,6 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
   bool _hasStartedChat = false;
   bool _isTyping = false;
 
-  String? _summary;
-  bool _showSummaryPopup = false;
-
   @override
   void initState() {
     super.initState();
@@ -45,12 +41,10 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
 
   Future<void> _loadConversations() async {
     final list = await _chatService.getConversations();
-    final patchedList = list
-        .map((conv) => {
-              ...conv,
-              'last_message': 'Tap to open this conversation',
-            })
-        .toList();
+    final patchedList = list.map((conv) => {
+      ...conv,
+      'last_message': 'Tap to open this conversation',
+    }).toList();
 
     setState(() => _conversations = patchedList);
   }
@@ -63,7 +57,7 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
           .map((msg) => {
                 'id': msg['id'],
                 'content': msg['content'],
-                'is_from_guest': msg['is_from_guest'],
+                'is_from_user': msg['is_from_user'] ?? true,
               })
           .cast<Map<String, dynamic>>()
           .toList();
@@ -92,7 +86,7 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
       _messages.add({
         'id': DateTime.now().millisecondsSinceEpoch,
         'content': content,
-        'is_from_guest': true,
+        'is_from_user': true,
       });
 
       _messageController.clear();
@@ -128,6 +122,9 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
     }
 
     setState(() => _isSending = false);
+    Future.delayed(const Duration(milliseconds: 150), () {
+      _inputFocusNode.requestFocus();
+    });
   }
 
   void _startNewConversation() {
@@ -154,74 +151,52 @@ class _GuestChatScreenState extends State<GuestChatScreen> {
     }
   }
 
-  Future<void> _summarizeChat() async {
-    if (_messages.isEmpty) return;
-
-    final combinedText = _messages.map((m) => m['content']).join('\n');
-
-    setState(() {
-      _summary = 'Summary of chat:\n\n$combinedText';
-      _showSummaryPopup = true;
-    });
+  void _summarizeChat() {
+    print('Summary button tapped');
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        AuthScreenScaffold(
-          title: 'Guest Chat',
-          initials: 'GU',
-          conversations: _conversations,
-          conversationId: _conversationId,
-          onStartNewConversation: _startNewConversation,
-          onSelectConversation: _loadConversationMessages,
-          actions: [
-            IconButton(
-              tooltip: 'Summarize Chat',
-              icon: const Icon(Icons.auto_awesome, color: Colors.white),
-              onPressed: _summarizeChat,
-            ),
-          ],
-          child: _hasStartedChat
-              ? Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        itemCount: _messages.length + (_isTyping ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _messages.length && _isTyping) {
-                            return const AnimatedTypingBubble();
-                          }
-                          final msg = _messages[index];
-                          return MessageBubble(
-                            content: msg['content'] ?? '',
-                            isFromGuest: msg['is_from_guest'] == true,
-                          );
-                        },
-                      ),
-                    ),
-                    const Divider(height: 1),
-                  ChatInputRow(
-  controller: _messageController,
-  onSend: _sendMessage,
-  isSending: _isSending,
-  focusNode: _inputFocusNode,
-  onSummarize: _summarizeChat, // ✅ required
-  showSummarize: true,         // ✅ must be true
-),
-                  ],
-                )
-              : EmptyChatPrompt(onPressed: _startNewConversation),
-        ),
-        if (_showSummaryPopup && _summary != null)
-          SummaryPopup(
-            summary: _summary!,
-            onClose: () => setState(() => _showSummaryPopup = false),
-          ),
-      ],
+    return AuthScreenScaffold(
+      title: 'Guest Chat',
+      initials: 'GU',
+      isGuest: true,
+      conversations: _conversations,
+      conversationId: _conversationId,
+      onStartNewConversation: _startNewConversation,
+      onSelectConversation: _loadConversationMessages,
+      child: _hasStartedChat
+          ? Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    itemCount: _messages.length + (_isTyping ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == _messages.length && _isTyping) {
+                        return const AnimatedTypingBubble();
+                      }
+                      final msg = _messages[index];
+                      return MessageBubble(
+                        content: msg['content'] ?? '',
+                        isFromUser: msg['is_from_user'] == true,
+                      );
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                ChatInputRow(
+                  controller: _messageController,
+                  onSend: _sendMessage,
+                  isSending: _isSending,
+                  focusNode: _inputFocusNode,
+                  showSummarize: true,
+                  onSummarize: _summarizeChat,
+                ),
+              ],
+            )
+          : EmptyChatPrompt(onPressed: _startNewConversation),
     );
   }
 }

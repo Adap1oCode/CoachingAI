@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 
 class MessageBubble extends StatelessWidget {
   final String content;
-  final bool isFromGuest;
+  final bool isFromUser;
 
   const MessageBubble({
     super.key,
     required this.content,
-    required this.isFromGuest,
+    required this.isFromUser,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      alignment: isFromGuest ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isFromUser ? Alignment.centerRight : Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Container(
         decoration: BoxDecoration(
-          color: isFromGuest ? const Color(0xFFF1F1F1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(isFromGuest ? 24 : 0),
+          color: isFromUser ? Colors.transparent : const Color(0xFFF1F1F1),
+          borderRadius: BorderRadius.circular(isFromUser ? 0 : 24),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Text(
