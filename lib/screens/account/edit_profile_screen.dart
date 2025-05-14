@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/widget/two_factor_settings_section.dart';
+import '../../core/utils/user_session.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -20,6 +21,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   String email = '';
   bool loading = false;
+  late String initials;
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     fullNameController.text = metadata['full_name'] ?? '';
     phoneController.text = metadata['phone'] ?? '';
     addressController.text = metadata['address'] ?? '';
+    initials = UserSession.initials;
   }
 
   InputDecoration fieldDecoration(String hint) => InputDecoration(
@@ -54,13 +57,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'address': addressController.text.trim(),
         },
       ));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Profile updated')),
-      );
+      _showSnack('✅ Profile updated');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error: $e')),
-      );
+      _showSnack('❌ Error: $e');
     } finally {
       setState(() => loading = false);
     }
@@ -71,9 +70,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final confirm = confirmPasswordController.text;
 
     if (newPass != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+      _showSnack('Passwords do not match');
       return;
     }
 
@@ -81,13 +78,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await Supabase.instance.client.auth.updateUser(
         UserAttributes(password: newPass),
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Password updated')),
-      );
+      _showSnack('✅ Password updated');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error updating password: $e')),
-      );
+      _showSnack('❌ Error updating password: $e');
+    }
+  }
+
+  void _showSnack(String message) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -98,6 +97,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Text('Edit Profile'),
         backgroundColor: const Color(0xFF00BF6D),
         foregroundColor: Colors.white,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Text(
+                initials,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF00BF6D),
+                ),
+              ),
+            ),
+          )
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -125,7 +139,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ✅ Save button (right-aligned and compact)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -164,7 +177,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ✅ Update Password button
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

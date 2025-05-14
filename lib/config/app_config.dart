@@ -9,7 +9,7 @@ class Env {
   static const String getmessageWebhookUrl     = '$n8nBaseUrl/get-messages';
   static const String sendmessageWebhookUrl    = '$n8nBaseUrl/send-message';
   static const String chatIdentityWebhookUrl   = '$n8nBaseUrl/chat-identity';
-
+  static const String chatSummaryWebhookUrl    = '$testn8nBaseUrl/chat-summary';
 
   // ✅ Chatwoot WebWidget config
   static const String chatwootBaseUrl = 'https://cw.flowmaticai.cloud';

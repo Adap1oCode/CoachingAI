@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/auth_service.dart';
 import '../utils/form_decorators.dart';
 import '../utils/button_styles.dart';
 
@@ -12,8 +12,8 @@ class TwoFactorSettingsSection extends StatefulWidget {
 }
 
 class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
-  final SupabaseClient client = Supabase.instance.client;
-  final TextEditingController _codeController = TextEditingController();
+  final _authService = AuthService();
+  final _codeController = TextEditingController();
 
   String? _qrUri;
   String? _factorId;
@@ -26,13 +26,12 @@ class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
   @override
   void initState() {
     super.initState();
-    _load2FAStatus();
+    _check2FAStatus();
   }
 
-  Future<void> _load2FAStatus() async {
+  Future<void> _check2FAStatus() async {
     try {
-      final factors = await client.auth.mfa.listFactors();
-      final enabled = factors.totp.isNotEmpty;
+      final enabled = await _authService.isTwoFactorEnabled();
       setState(() => _isEnabled = enabled);
     } catch (e) {
       setState(() => _error = 'Error checking 2FA status: $e');
@@ -45,19 +44,11 @@ class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
       _error = null;
     });
     try {
-      final res = await client.auth.mfa.enroll(factorType: FactorType.totp);
-      final uri = res.totp?.uri;
-      _factorId = res.id;
-
-      if (uri == null || _factorId == null) {
-        throw Exception('Failed to enroll in 2FA.');
-      }
-
-      final challenge = await client.auth.mfa.challenge(factorId: _factorId!);
-      _challengeId = challenge.id;
-
+      final (uri, factorId, challengeId) = await _authService.enrollTwoFactor();
       setState(() {
         _qrUri = uri;
+        _factorId = factorId;
+        _challengeId = challengeId;
       });
     } catch (e) {
       setState(() => _error = 'Error enrolling 2FA: $e');
@@ -73,18 +64,13 @@ class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
     });
 
     try {
-      final res = await client.auth.mfa.verify(
+      await _authService.verifyTwoFactor(
         factorId: _factorId!,
         challengeId: _challengeId!,
         code: _codeController.text.trim(),
       );
-
-      if (res.user != null) {
-        await _load2FAStatus();
-        _resetState();
-      } else {
-        throw Exception('Invalid verification.');
-      }
+      await _check2FAStatus();
+      _resetState();
     } catch (e) {
       setState(() => _error = 'Invalid code: $e');
     } finally {
@@ -93,31 +79,13 @@ class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
   }
 
   Future<void> _disable2FA() async {
+    final code = await _promptFor2FACode();
+    if (code == null) return;
+
     try {
-      final factors = await client.auth.mfa.listFactors();
-      final totp = factors.totp.firstOrNull;
-      if (totp == null) throw Exception('No TOTP factor enrolled.');
-
-      _factorId = totp.id;
-      final challenge = await client.auth.mfa.challenge(factorId: _factorId!);
-      _challengeId = challenge.id;
-
-      final code = await _promptFor2FACode();
-      if (code == null) return;
-
-      final res = await client.auth.mfa.verify(
-        factorId: _factorId!,
-        challengeId: _challengeId!,
-        code: code,
-      );
-
-      if (res.user != null) {
-        await client.auth.mfa.unenroll(_factorId!);
-        await _load2FAStatus();
-        _showSnack('✅ 2FA disabled');
-      } else {
-        throw Exception('2FA verification failed.');
-      }
+      await _authService.disableTwoFactor(code);
+      await _check2FAStatus();
+      _showSnack('✅ 2FA disabled');
     } catch (e) {
       _showSnack('❌ Error disabling 2FA: $e');
     }
@@ -132,9 +100,7 @@ class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: '2FA code',
-          ),
+          decoration: const InputDecoration(labelText: '2FA code'),
         ),
         actions: [
           TextButton(
@@ -179,9 +145,7 @@ class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
         ),
         const SizedBox(height: 8),
         Text(
-          _isEnabled
-              ? '2FA is currently enabled on your account.'
-              : '2FA is currently disabled.',
+          _isEnabled ? '2FA is currently enabled on your account.' : '2FA is currently disabled.',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
