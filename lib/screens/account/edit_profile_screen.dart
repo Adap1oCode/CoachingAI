@@ -1,109 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/widget/two_factor_settings_section.dart';
 
-class EditProfileScreen extends StatelessWidget {
+class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: const Color(0xFF00BF6D),
-        foregroundColor: Colors.white,
-        title: const Text("Edit Profile"),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            const _ProfilePic(),
-            const SizedBox(height: 24),
-            const _FormFields(),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SizedBox(
-                  width: 120,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("Cancel"),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 160,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00BF6D),
-                      foregroundColor: Colors.white,
-                      shape: const StadiumBorder(),
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
-                    onPressed: () {
-                      // TODO: Save logic
-                    },
-                    child: const Text("Save Update"),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _ProfilePic extends StatelessWidget {
-  const _ProfilePic();
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  final fullNameController = TextEditingController();
+  final phoneController = TextEditingController();
+  final addressController = TextEditingController();
+
+  final currentPasswordController = TextEditingController();
+  final newPasswordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+
+  String email = '';
+  bool loading = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.bottomRight,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.grey.withOpacity(0.2),
-            ),
-          ),
-          child: const CircleAvatar(
-            radius: 50,
-            backgroundImage: NetworkImage(
-              'https://i.postimg.cc/cCsYDjvj/user-2.png',
-            ),
-          ),
-        ),
-        InkWell(
-          onTap: () {
-            // TODO: Image picker
-          },
-          child: const CircleAvatar(
-            radius: 14,
-            backgroundColor: Color(0xFF00BF6D),
-            child: Icon(Icons.edit, size: 16, color: Colors.white),
-          ),
-        )
-      ],
-    );
+  void initState() {
+    super.initState();
+    final user = Supabase.instance.client.auth.currentUser;
+    final metadata = user?.userMetadata ?? {};
+
+    email = user?.email ?? '';
+    fullNameController.text = metadata['full_name'] ?? '';
+    phoneController.text = metadata['phone'] ?? '';
+    addressController.text = metadata['address'] ?? '';
   }
-}
 
-class _FormFields extends StatelessWidget {
-  const _FormFields();
-
-  @override
-  Widget build(BuildContext context) {
-    InputDecoration fieldDecoration(String hint) {
-      return InputDecoration(
+  InputDecoration fieldDecoration(String hint) => InputDecoration(
         hintText: hint,
         filled: true,
         fillColor: const Color(0xFF00BF6D).withOpacity(0.05),
@@ -113,36 +43,146 @@ class _FormFields extends StatelessWidget {
           borderSide: BorderSide.none,
         ),
       );
+
+  Future<void> saveProfile() async {
+    setState(() => loading = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(UserAttributes(
+        data: {
+          'full_name': fullNameController.text.trim(),
+          'phone': phoneController.text.trim(),
+          'address': addressController.text.trim(),
+        },
+      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Profile updated')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Error: $e')),
+      );
+    } finally {
+      setState(() => loading = false);
+    }
+  }
+
+  Future<void> updatePassword() async {
+    final newPass = newPasswordController.text;
+    final confirm = confirmPasswordController.text;
+
+    if (newPass != confirm) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
     }
 
-    return Column(
-      children: [
-        TextFormField(
-          initialValue: 'Annette Black',
-          decoration: fieldDecoration('Name'),
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(password: newPass),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Password updated')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Error updating password: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Profile'),
+        backgroundColor: const Color(0xFF00BF6D),
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextFormField(
+              initialValue: email,
+              readOnly: true,
+              decoration: fieldDecoration('Email'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: fullNameController,
+              decoration: fieldDecoration('Full Name'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: phoneController,
+              decoration: fieldDecoration('Phone'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: addressController,
+              decoration: fieldDecoration('Address'),
+            ),
+            const SizedBox(height: 16),
+
+            // ✅ Save button (right-aligned and compact)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: saveProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00BF6D),
+                    foregroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                    minimumSize: const Size(140, 40),
+                  ),
+                  child: const Text("Save Update"),
+                ),
+              ],
+            ),
+
+            const TwoFactorSettingsSection(),
+
+            const SizedBox(height: 32),
+            TextField(
+              controller: currentPasswordController,
+              obscureText: true,
+              decoration: fieldDecoration('Current Password'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: newPasswordController,
+              obscureText: true,
+              decoration: fieldDecoration('New Password'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: confirmPasswordController,
+              obscureText: true,
+              decoration: fieldDecoration('Confirm New Password'),
+            ),
+            const SizedBox(height: 16),
+
+            // ✅ Update Password button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: updatePassword,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00BF6D),
+                    foregroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                    minimumSize: const Size(180, 40),
+                  ),
+                  child: const Text("Update Password"),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        TextFormField(
-          initialValue: 'annette@gmail.com',
-          decoration: fieldDecoration('Email'),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          initialValue: '(316) 555-0116',
-          decoration: fieldDecoration('Phone'),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          initialValue: 'New York, NY',
-          decoration: fieldDecoration('Address'),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          initialValue: '',
-          obscureText: true,
-          decoration: fieldDecoration('New Password'),
-        ),
-      ],
+      ),
     );
   }
 }

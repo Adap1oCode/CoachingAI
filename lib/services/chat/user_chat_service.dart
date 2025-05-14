@@ -1,7 +1,7 @@
 import 'chat_api.dart';
 import 'chat_service.dart';
 
-class UserChatService {
+class UserChatService implements IChatService {
   final String userId;
   String? contactId;
   String? accountId;
@@ -14,6 +14,7 @@ class UserChatService {
     this.sourceId,
   });
 
+  @override
   Future<Map<String, dynamic>?> sendMessage({
     required String content,
     required ChatEventType eventType,
@@ -40,10 +41,12 @@ class UserChatService {
     return response;
   }
 
+  @override
   Future<Map<String, dynamic>?> getMessages(String conversationId) {
     return ChatApi.getMessages(conversationId);
   }
 
+  @override
   Future<List<Map<String, dynamic>>> getConversations() async {
     if (contactId == null) return [];
     return await ChatApi.getConversations(contactId!);

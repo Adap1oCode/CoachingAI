@@ -1,134 +1,162 @@
 import 'package:flutter/material.dart';
-import 'package:coaching_ai_new/constants/route_names.dart';
-import 'package:coaching_ai_new/core/utils/user_session.dart';
-import 'package:coaching_ai_new/core/widget/auth_screen_scaffold.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:coaching_ai_new/core/utils/form_decorators.dart';
+import 'package:coaching_ai_new/core/utils/button_styles.dart';
+import 'package:coaching_ai_new/services/auth_service.dart';
 
-class AccountScreen extends StatelessWidget {
-  const AccountScreen({super.key});
+class TwoFactorSettingsSection extends StatefulWidget {
+  const TwoFactorSettingsSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final fullName = UserSession.fullName;
-    final initials = UserSession.initials;
+  State<TwoFactorSettingsSection> createState() => _TwoFactorSettingsSectionState();
+}
 
-    return AuthScreenScaffold(
-      title: 'My Account',
-      initials: initials,
-      conversations: const [], // ✅ No chat sidebar needed here
-      conversationId: null,
-      onStartNewConversation: () {},
-      onSelectConversation: (_) {},
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const CircleAvatar(
-                  radius: 36,
-                  backgroundImage: NetworkImage('https://i.postimg.cc/0jqKB6mS/Profile-Image.png'),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  fullName,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 32),
-                _AccountTile(
-                  icon: Icons.person_outline,
-                  label: 'My Account',
-                  onTap: () => Navigator.pushNamed(context, RouteNames.editProfile),
-                ),
-                _AccountTile(
-                  icon: Icons.notifications_none,
-                  label: 'Notifications',
-                  onTap: () {},
-                ),
-                _AccountTile(
-                  icon: Icons.settings_outlined,
-                  label: 'Settings',
-                  onTap: () {},
-                ),
-                _AccountTile(
-                  icon: Icons.help_outline,
-                  label: 'Help Center',
-                  onTap: () {},
-                ),
-                _AccountTile(
-                  icon: Icons.logout,
-                  label: 'Log Out',
-                  isDestructive: true,
-                  onTap: () => Navigator.pushNamed(context, RouteNames.logout),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+class _TwoFactorSettingsSectionState extends State<TwoFactorSettingsSection> {
+  final AuthService _authService = AuthService();
+  final TextEditingController _codeController = TextEditingController();
+
+  String? _qrUri;
+  String? _factorId;
+  String? _error;
+  bool _isEnabled = false;
+  bool _loading = false;
+  bool _verifying = false;
+  String? _challengeId;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _load2FAStatus();
   }
-}
 
-class _AccountTile extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final bool isDestructive;
-  final VoidCallback? onTap;
+  Future<void> _load2FAStatus() async {
+    final enabled = await _authService.isTwoFactorEnabled();
+    setState(() => _isEnabled = enabled);
+  }
 
-  const _AccountTile({
-    required this.icon,
-    required this.label,
-    this.isDestructive = false,
-    this.onTap,
-  });
+  Future<void> _startEnrollment() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final (uri, factorId) = await _authService.enrollTwoFactor();
+      setState(() {
+        _qrUri = uri;
+        _factorId = factorId;
+      });
+    } catch (e) {
+      setState(() => _error = 'Error enrolling 2FA: $e');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
-  @override
-  State<_AccountTile> createState() => _AccountTileState();
-}
+  Future<void> _verifyCode() async {
+    setState(() {
+      _verifying = true;
+      _error = null;
+    });
 
-class _AccountTileState extends State<_AccountTile> {
-  bool _hovering = false;
+    try {
+      await _authService.challengeTwoFactor(_factorId!);
+      await _authService.verifyTwoFactor(
+        factorId: _factorId!,
+        challengeId: _challengeId!,
+        code: _codeController.text.trim(),
+      );
+      await _load2FAStatus();
+
+      setState(() {
+        _qrUri = null;
+        _factorId = null;
+        _codeController.clear();
+      });
+    } catch (e) {
+      setState(() => _error = 'Invalid code: $e');
+    } finally {
+      setState(() => _verifying = false);
+    }
+  }
+
+  Future<void> _disable2FA() async {
+    setState(() => _loading = true);
+    try {
+      await _authService.disableTwoFactor();
+      await _load2FAStatus();
+    } catch (e) {
+      setState(() => _error = 'Error disabling 2FA: $e');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: _hovering ? const Color(0xFFE0E0E0) : const Color(0xFFF5F6F9),
-            borderRadius: BorderRadius.circular(12),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        Text(
+          'Two-Factor Authentication',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _isEnabled ? '2FA is currently enabled on your account.' : '2FA is currently disabled.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+
+        if (_error != null)
+          Text(_error!, style: const TextStyle(color: Colors.red)),
+
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: CircularProgressIndicator(),
           ),
-          child: Row(
+
+        if (_isEnabled && !_loading)
+          ElevatedButton(
+            onPressed: _disable2FA,
+            style: elevatedButtonStyle(),
+            child: const Text('Disable 2FA'),
+          ),
+
+        if (!_isEnabled && !_qrUriAvailable)
+          ElevatedButton(
+            onPressed: _startEnrollment,
+            style: elevatedButtonStyle(),
+            child: const Text('Enable 2FA'),
+          ),
+
+        if (_qrUriAvailable)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                widget.icon,
-                color: widget.isDestructive ? Colors.red : const Color(0xFF00BF6D),
+              const SizedBox(height: 16),
+              Center(child: QrImageView(data: _qrUri!, size: 200)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _codeController,
+                decoration: inputDecoration('Enter code from Authenticator'),
+                keyboardType: TextInputType.number,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: widget.isDestructive ? Colors.red : Colors.black,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: _verifying ? null : _verifyCode,
+                style: elevatedButtonStyle(),
+                child: _verifying
+                    ? const CircularProgressIndicator()
+                    : const Text('Verify and Enable'),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
-        ),
-      ),
+      ],
     );
   }
+
+  bool get _qrUriAvailable => _qrUri != null && _factorId != null;
 }

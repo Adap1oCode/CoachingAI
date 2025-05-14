@@ -1,6 +1,7 @@
 // =========================
 // auth_service.dart
 // =========================
+
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
@@ -10,8 +11,8 @@ import 'package:flutter/foundation.dart';
 class AuthService {
   final _client = Supabase.instance.client;
 
-  /// Sign in and return the authenticated user
-  Future<User> login({required String email, required String password}) async {
+  /// Sign in and return the authenticated user + session
+  Future<AuthResponse> login({required String email, required String password}) async {
     final response = await _client.auth.signInWithPassword(
       email: email,
       password: password,
@@ -19,7 +20,7 @@ class AuthService {
 
     final user = response.user;
     if (user == null) throw Exception('Login failed');
-    return user;
+    return response;
   }
 
   /// Sign up a new user and return the created user
@@ -42,7 +43,7 @@ class AuthService {
 
       return user;
     } catch (e) {
-      throw Exception('Sign up failed: $e');
+      throw Exception('Sign up failed: \$e');
     }
   }
 
@@ -51,7 +52,7 @@ class AuthService {
     try {
       await _client.auth.resetPasswordForEmail(email);
     } catch (e) {
-      throw Exception('Reset password failed: $e');
+      throw Exception('Reset password failed: \$e');
     }
   }
 
@@ -61,7 +62,7 @@ class AuthService {
     required String userId,
   }) async {
     try {
-      debugPrint('📤 Sending identity request to webhook for: $email, $userId');
+      debugPrint('📤 Sending identity request to webhook for: \$email, \$userId');
 
       final response = await http.post(
         Uri.parse(Env.chatIdentityWebhookUrl),
@@ -72,10 +73,10 @@ class AuthService {
         }),
       );
 
-      debugPrint('📦 Raw webhook response: ${response.body}');
+      debugPrint('📦 Raw webhook response: \${response.body}');
 
       final decoded = jsonDecode(response.body);
-      debugPrint('🧪 Decoded webhook JSON type: ${decoded.runtimeType}');
+      debugPrint('🧪 Decoded webhook JSON type: \${decoded.runtimeType}');
 
       if (decoded is List && decoded.isNotEmpty) {
         debugPrint('📥 Returning first item from webhook response list');
@@ -89,8 +90,62 @@ class AuthService {
 
       throw Exception('Unexpected webhook response format');
     } catch (e) {
-      debugPrint('❌ Error in fetchChatIdentity: $e');
-      throw Exception('Chat identity error: $e');
+      debugPrint('❌ Error in fetchChatIdentity: \$e');
+      throw Exception('Chat identity error: \$e');
     }
+  }
+
+  // ==================================================
+  // =============== TWO-FACTOR METHODS ===============
+  // ==================================================
+
+  /// Enroll user in TOTP 2FA (returns URI for QR code + factorId)
+  Future<(String uri, String factorId)> enrollTwoFactor() async {
+    final res = await _client.auth.mfa.enroll(factorType: FactorType.totp);
+    final uri = res.totp.uri;
+    final factorId = res.id;
+
+    if (factorId.isEmpty) {
+      throw Exception('Failed to enroll in 2FA.');
+    }
+
+    return (uri, factorId);
+  }
+
+  /// Challenge a factor (before verify)
+  Future<String> challengeTwoFactor(String factorId) async {
+    final res = await _client.auth.mfa.challenge(factorId: factorId);
+    if (res.id.isEmpty) {
+      throw Exception('Failed to initiate 2FA challenge.');
+    }
+    return res.id;
+  }
+
+  /// Verify the TOTP code to complete login or enrollment
+  Future<void> verifyTwoFactor({
+    required String factorId,
+    required String challengeId,
+    required String code,
+  }) async {
+    await _client.auth.mfa.verify(
+      factorId: factorId,
+      challengeId: challengeId,
+      code: code,
+    );
+  }
+
+  /// Disable TOTP (removes the active factor)
+  Future<void> disableTwoFactor() async {
+    final factors = await _client.auth.mfa.listFactors();
+    final verified = factors.totp.where((f) => f.status == FactorStatus.verified).toList();
+    if (verified.isEmpty) throw Exception('No 2FA factor to disable');
+
+    await _client.auth.mfa.unenroll(verified.first.id);
+  }
+
+  /// Check if user has verified TOTP 2FA enabled
+  Future<bool> isTwoFactorEnabled() async {
+    final factors = await _client.auth.mfa.listFactors();
+    return factors.totp.any((f) => f.status == FactorStatus.verified);
   }
 }

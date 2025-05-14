@@ -34,16 +34,36 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final user = await _authService.login(
+      final response = await _authService.login(
         email: email.trim(),
         password: password.trim(),
       );
+
+      final user = response.user;
+      final session = response.session;
+
+      if (user == null) {
+        throw Exception('Login failed: No user returned');
+      }
+
+      // If no session, Supabase requires 2FA verification
+      if (session == null) {
+        Navigator.pushReplacementNamed(
+          context,
+          RouteNames.twoFA,
+          arguments: {
+            'userId': user.id,
+            'email': email.trim(),
+          },
+        );
+        return;
+      }
 
       final chatIdentity = await _authService.fetchChatIdentity(
         email: email.trim(),
         userId: user.id,
       );
-      debugPrint('🔍 Chat identity response: $chatIdentity');
+      debugPrint('🔍 Chat identity response: \$chatIdentity');
 
       if (mounted) {
         Navigator.pushReplacementNamed(

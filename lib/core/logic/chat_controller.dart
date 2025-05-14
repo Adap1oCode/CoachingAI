@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:coaching_ai_new/services/chat_service.dart';
+import 'package:coaching_ai_new/services/chat/chat_service.dart';
 
 mixin ChatController<T extends StatefulWidget> on State<T> {
   final TextEditingController messageController = TextEditingController();
@@ -43,7 +43,7 @@ mixin ChatController<T extends StatefulWidget> on State<T> {
           .map((msg) => {
                 'id': msg['id'],
                 'content': msg['content'],
-                'is_from_guest': msg['is_from_guest'],
+                'is_from_user': msg['is_from_user'] ?? msg['is_from_guest'] ?? false,
               })
           .cast<Map<String, dynamic>>()
           .toList();
@@ -96,6 +96,54 @@ mixin ChatController<T extends StatefulWidget> on State<T> {
     });
   }
 
-  // Optional: override this in screen if needed (like in guest chat)
-  Future<void> sendMessage() async {}
+  
+  Future<void> sendMessage() async {
+    final content = messageController.text.trim();
+    if (content.isEmpty || isSending) return;
+
+    setState(() {
+      isSending = true;
+      isTyping = true;
+      messages.add({
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'content': content,
+        'is_from_user': true,
+      });
+      messageController.clear();
+    });
+
+    scrollToBottom();
+
+    final eventType = conversationId == null
+        ? (conversations.isEmpty
+            ? ChatEventType.firstConversation
+            : ChatEventType.newConversation)
+        : ChatEventType.newMessage;
+
+    final response = await chatService.sendMessage(
+      content: content,
+      eventType: eventType,
+      conversationId: conversationId?.toString(),
+    );
+
+    if (response != null && response['event'] == 'message_created') {
+      final newId = int.tryParse(response['conversation_id']?.toString() ?? '');
+      setState(() {
+        conversationId = newId;
+      });
+
+      await loadConversations();
+      if (conversationId != null) {
+        await loadConversationMessages(conversationId!);
+      }
+    } else {
+      setState(() => isTyping = false);
+    }
+
+    setState(() => isSending = false);
+
+    Future.delayed(const Duration(milliseconds: 150), () {
+      inputFocusNode.requestFocus();
+    });
+  }
 }

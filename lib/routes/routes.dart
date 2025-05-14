@@ -15,7 +15,6 @@ import '../screens/chat/chat_summary_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../core/widget/auth_screen_scaffold.dart';
-import '../screens/account/account_screen.dart';
 import '../screens/account/edit_profile_screen.dart';
 import '../screens/auth/logout_screen.dart';
 
@@ -67,7 +66,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
           conversationId: null,
           onStartNewConversation: () {},
           onSelectConversation: (_) {},
-          child: const AccountScreen(),
+          child: const EditProfileScreen(),
         ),
       );
     case RouteNames.editProfile:

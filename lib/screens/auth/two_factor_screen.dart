@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:coaching_ai_new/constants/route_names.dart';
 import 'package:coaching_ai_new/core/utils/button_styles.dart';
 import 'package:coaching_ai_new/core/utils/form_decorators.dart';
@@ -17,6 +16,45 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
   final TextEditingController _codeController = TextEditingController();
   String? _error;
   bool _loading = false;
+  String? _factorId;
+  String? _challengeId;
+  String? _userId;
+  String? _email;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null) {
+      _userId = args['userId'];
+      _email = args['email'];
+    }
+
+    _initChallenge();
+  }
+
+  Future<void> _initChallenge() async {
+    setState(() => _loading = true);
+    try {
+      final factors = await Supabase.instance.client.auth.mfa.listFactors();
+      final verified = factors.totp.where((f) => f.status == FactorStatus.verified).toList();
+
+      if (verified.isEmpty) {
+        throw Exception('No verified TOTP factor found for this user.');
+      }
+
+      final factor = verified.first;
+      _factorId = factor.id;
+
+      final challenge = await Supabase.instance.client.auth.mfa.challenge(factorId: factor.id);
+      _challengeId = challenge.id;
+    } catch (e) {
+      setState(() => _error = 'Failed to start 2FA challenge: $e');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   Future<void> _verifyCode() async {
     setState(() {
@@ -24,29 +62,37 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
       _error = null;
     });
 
-    final code = _codeController.text.trim();
     try {
-      final response = await http.post(
-        Uri.parse('https://n8n.flowmaticai.cloud/verify_2fa'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'code': code}),
+      final code = _codeController.text.trim();
+
+      if (_factorId == null || _challengeId == null) {
+        throw Exception('Missing 2FA factor or challenge.');
+      }
+
+      await Supabase.instance.client.auth.mfa.verify(
+        factorId: _factorId!,
+        challengeId: _challengeId!,
+        code: code,
       );
 
-      if (response.statusCode == 200) {
-        Navigator.pushReplacementNamed(context, RouteNames.chat);
-      } else {
-        setState(() {
-          _error = 'Invalid code. Please try again.';
-        });
-      }
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        RouteNames.chat,
+        arguments: {
+          'userId': _userId,
+          'userName': _email,
+          'contactId': null,
+          'accountId': null,
+          'sourceId': null,
+          'hmac': null,
+        },
+      );
     } catch (e) {
-      setState(() {
-        _error = 'Error verifying code: $e';
-      });
+      setState(() => _error = 'Invalid code: $e');
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
   }
 

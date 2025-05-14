@@ -2,6 +2,7 @@
 // chat_service.dart
 // =========================
 
+
 enum ChatEventType {
   firstConversation,
   newConversation,
@@ -22,4 +23,14 @@ extension ChatEventTypeExtension on ChatEventType {
         return 'initial_account_chat'; // ✅ Updated string
     }
   }
+}
+
+abstract class IChatService {
+  Future<List<Map<String, dynamic>>> getConversations();
+  Future<Map<String, dynamic>?> getMessages(String conversationId);
+  Future<Map<String, dynamic>?> sendMessage({
+    required String content,
+    required ChatEventType eventType,
+    String? conversationId,
+  });
 }
